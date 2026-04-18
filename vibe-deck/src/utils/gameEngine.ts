@@ -10,7 +10,16 @@ export const shuffle = <T,>(array: T[]): T[] => {
 };
 
 export const getNextEnemyMove = (enemy: Enemy) => {
-  const nextIndex = (enemy.nextMoveIndex + 1) % enemy.moves.length;
+  let nextIndex: number;
+  
+  if (enemy.intent === 'RANDOM') {
+    // True random selection for unpredictable enemies
+    nextIndex = Math.floor(Math.random() * enemy.moves.length);
+  } else {
+    // Default: Cycle through moves in order
+    nextIndex = (enemy.nextMoveIndex + 1) % enemy.moves.length;
+  }
+  
   const nextMove = enemy.moves[nextIndex];
   return {
     nextMoveIndex: nextIndex,
@@ -25,12 +34,28 @@ export const tickStatusEffects = (effects: StatusEffect[]) => {
     .filter(e => e.duration > 0);
 };
 
+export const mergeStatusEffects = (current: StatusEffect[], next: StatusEffect): StatusEffect[] => {
+  const existingIndex = current.findIndex(e => e.type === next.type);
+  if (existingIndex > -1) {
+    const updated = [...current];
+    const e = updated[existingIndex];
+    // Stack both value and duration
+    updated[existingIndex] = {
+      ...e,
+      value: e.value + next.value,
+      duration: e.duration + next.duration
+    };
+    return updated;
+  }
+  return [...current, next];
+};
+
 export const generateMapNodes = (floor: number): MapNode[] => {
   if (floor % 10 === 0) {
     return [{ id: 'boss', type: 'BOSS', label: 'THE PIT BOSS' }];
   }
   
-  const types: NodeType[] = ['ELITE', 'SHOP', 'REST', 'EVENT'];
+  const types: NodeType[] = ['ELITE', 'SHOP', 'REST', 'EVENT', 'TREASURE'];
   const pool = shuffle(types);
   
   return [
@@ -40,8 +65,14 @@ export const generateMapNodes = (floor: number): MapNode[] => {
 };
 
 export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'BOSS' = 'NORMAL'): Enemy => {
-  // Scaling Factor: Starts at 0.6x at Floor 1, reaches 1.0x at Floor 4, and 2.0x at Floor 10
-  const multiplier = 0.6 + (floor - 1) * 0.15;
+  // New Scaling Curve:
+  // Floor 1: 0.5x (Very weak)
+  // Floor 3: 0.8x (Approaching standard)
+  // Floor 5: 1.2x (Challenging)
+  // Floor 10: 2.5x (Endgame Boss)
+  const multiplier = floor <= 3 
+    ? 0.5 + (floor - 1) * 0.15 // 0.5, 0.65, 0.8
+    : 0.8 + (floor - 3) * 0.25; // 1.05, 1.3, 1.55... 2.55 at floor 10
   
   let template;
   if (type === 'BOSS') {
@@ -67,6 +98,7 @@ export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'B
   
   return {
     ...template,
+    type,
     maxHp: scaledMaxHp,
     hp: scaledMaxHp,
     block: Math.floor((template.block || 0) * multiplier),

@@ -10,9 +10,11 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function ShopOverlay() {
-  const { phase, player, shopOptions, buyCard, leaveShop, setFocusedCard } = useGameStore();
+  const { phase, player, shopOptions, shopRelicOptions, buyCard, buyRelic, leaveShop, setFocusedCard } = useGameStore();
 
   if (phase !== "SHOP") return null;
+
+  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950 z-[130] flex flex-col items-center justify-center p-8 overflow-hidden">
@@ -59,49 +61,87 @@ export function ShopOverlay() {
           </div>
         </header>
 
-        {/* Card Grid */}
+        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-12 justify-items-center py-4">
-            <AnimatePresence mode="popLayout">
-              {shopOptions.map((card) => (
-                <motion.div
-                  key={card.instanceId}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                  className="flex flex-col items-center gap-6"
+          {/* Relics Section */}
+          <div className="mb-16">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+              <div className="h-px w-8 bg-slate-800" /> Rare Relics <div className="h-px w-8 bg-slate-800" />
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {shopRelicOptions.map((relic) => (
+                <button
+                  key={relic.id}
+                  onClick={() => buyRelic(relic)}
+                  disabled={player.chips < (relic.price || 0)}
+                  className={cn(
+                    "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left",
+                    player.chips >= (relic.price || 0)
+                      ? "bg-slate-900 border-slate-800 hover:border-yellow-500/50 group"
+                      : "bg-slate-950 border-slate-900 opacity-50 cursor-not-allowed"
+                  )}
                 >
-                  <CardUI
-                    card={card}
-                    onClick={() => setFocusedCard(card)}
-                    onInfoClick={() => setFocusedCard(card)}
-                    modifiers={[]}
-                    enemyDebuff={0}
-                  />
-
-                  <button
-                    onClick={() => buyCard(card)}
-                    disabled={player.chips < (card.price || 0)}
-                    className={cn(
-                      "w-full py-3 rounded-xl font-black uppercase italic tracking-tighter border-2 transition-all flex flex-col items-center group/btn",
-                      player.chips >= (card.price || 0)
-                        ? "bg-slate-900 border-yellow-500/50 text-white hover:border-yellow-400 hover:bg-slate-800"
-                        : "bg-slate-950 border-slate-800 text-slate-700 cursor-not-allowed"
-                    )}
-                  >
-                    <span className="text-[10px] opacity-60 mb-0.5 group-hover/btn:opacity-100 transition-opacity">Buy for</span>
-                    <span className="text-lg">♦ {card.price}</span>
-                  </button>
-                </motion.div>
+                  <div className="text-4xl p-2 bg-slate-950 rounded-xl border border-slate-800 group-hover:scale-110 transition-transform">
+                    {relic.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-black uppercase italic tracking-tight">{relic.name}</p>
+                    <p className="text-[10px] text-slate-500 font-medium leading-tight">{relic.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-yellow-500 font-black italic">♦ {relic.price}</span>
+                  </div>
+                </button>
               ))}
-            </AnimatePresence>
-            
-            {shopOptions.length === 0 && (
-              <div className="col-span-full py-20 text-center">
-                 <p className="text-slate-500 font-bold uppercase tracking-widest italic">Inventory Sold Out</p>
-              </div>
-            )}
+              {shopRelicOptions.length === 0 && (
+                <p className="col-span-full text-slate-700 font-bold uppercase text-[10px] tracking-widest text-center py-4">Relic inventory exhausted</p>
+              )}
+            </div>
+          </div>
+
+          {/* Card Grid */}
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+              <div className="h-px w-8 bg-slate-800" /> Exclusive Cards <div className="h-px w-8 bg-slate-800" />
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-12 justify-items-center py-4">
+              <AnimatePresence mode="popLayout">
+                {shopOptions.map((card) => (
+                  <motion.div
+                    key={card.instanceId}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    className="flex flex-col items-center gap-6"
+                  >
+                    <CardUI
+                      card={card}
+                      onClick={() => setFocusedCard(card)}
+                      onInfoClick={() => setFocusedCard(card)}
+                      modifiers={[]}
+                      enemyDebuff={0}
+                      playerStatBonus={player.stats.successRateBonus}
+                      relicBonus={relicBonus}
+                    />
+
+                    <button
+                      onClick={() => buyCard(card)}
+                      disabled={player.chips < (card.price || 0)}
+                      className={cn(
+                        "w-full py-3 rounded-xl font-black uppercase italic tracking-tighter border-2 transition-all flex flex-col items-center group/btn",
+                        player.chips >= (card.price || 0)
+                          ? "bg-slate-900 border-yellow-500/50 text-white hover:border-yellow-400 hover:bg-slate-800"
+                          : "bg-slate-950 border-slate-800 text-slate-700 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="text-[10px] opacity-60 mb-0.5 group-hover/btn:opacity-100 transition-opacity">Buy for</span>
+                      <span className="text-lg">♦ {card.price}</span>
+                    </button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
         

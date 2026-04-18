@@ -229,7 +229,7 @@ export function Enemy({ enemy }: EnemyProps) {
           </p>
         )}
 
-        <StatusAuras statusEffects={enemy.statusEffects} align="center" />
+        <StatusAuras statusEffects={enemy.statusEffects} align="center" tooltipDirection="up" />
 
         {isGodMode && (
           <button

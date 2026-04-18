@@ -9,10 +9,13 @@ export function StarterSelectOverlay() {
     starterPicksRemaining, 
     draftOptions, 
     pickStarterCard, 
-    setFocusedCard 
+    setFocusedCard,
+    player
   } = useGameStore();
 
   if (phase !== "STARTER_SELECT") return null;
+
+  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[150] flex flex-col items-center justify-center p-8">
@@ -59,6 +62,8 @@ export function StarterSelectOverlay() {
                   onInfoClick={() => setFocusedCard(card)}
                   modifiers={[]}
                   enemyDebuff={0}
+                  playerStatBonus={player.stats.successRateBonus}
+                  relicBonus={relicBonus}
                 />
               </motion.div>
             ))}

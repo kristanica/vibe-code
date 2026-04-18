@@ -4,9 +4,11 @@ import { Card as CardUI } from "./Card";
 import { useGameStore } from "../store/useGameStore";
 
 export function DraftOverlay() {
-  const { phase, draftOptions, draftCard, setFocusedCard } = useGameStore();
+  const { phase, draftOptions, draftCard, setFocusedCard, player } = useGameStore();
 
   if (phase !== "DRAFT") return null;
+
+  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8">
@@ -32,6 +34,8 @@ export function DraftOverlay() {
               onInfoClick={() => setFocusedCard(card)}
               modifiers={[]}
               enemyDebuff={0}
+              playerStatBonus={player.stats.successRateBonus}
+              relicBonus={relicBonus}
             />
           ))}
         </div>

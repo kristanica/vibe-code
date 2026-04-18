@@ -10,6 +10,8 @@ import { EventOverlay } from "../components/EventOverlay";
 import { VictoryOverlay } from "../components/VictoryOverlay";
 import { StarterSelectOverlay } from "../components/StarterSelectOverlay";
 import { DraftOverlay } from "../components/DraftOverlay";
+import { LevelUpOverlay } from "../components/LevelUpOverlay";
+import { TreasureOverlay } from "../components/TreasureOverlay";
 import { StatusHeader } from "../components/StatusHeader";
 import { TurnVisuals } from "../components/TurnVisuals";
 import { AnimatePresence } from "framer-motion";
@@ -79,21 +81,50 @@ export function Game() {
       <ShopOverlay />
       <EventOverlay />
       <VictoryOverlay />
+      <TreasureOverlay />
       <StarterSelectOverlay />
       <DraftOverlay />
+      <LevelUpOverlay />
 
-      <StatusHeader />
+      <div className="flex flex-col h-full w-full max-w-7xl mx-auto">
+        {/* Top Section - Fixed Height */}
+        <div className="h-32 shrink-0">
+          <StatusHeader />
+        </div>
 
-      <main className="flex-1 flex flex-col justify-center items-center relative gap-12">
-        {enemy && <EnemyUI enemy={enemy} />}
-        <BattleLog log={log} />
-      </main>
+        {/* Middle Section - Dynamic but bounded */}
+        <main className="flex-1 flex flex-col justify-center items-center relative gap-8 min-h-0">
+          <div className="h-[200px] flex items-center justify-center">
+            {enemy ? (
+              <EnemyUI enemy={enemy} />
+            ) : (
+              <div className="text-slate-800 font-black text-6xl uppercase italic opacity-20 select-none">
+                Probability Deck
+              </div>
+            )}
+          </div>
+          <div className="w-full max-w-2xl h-40 shrink-0">
+            <BattleLog log={log} />
+          </div>
+        </main>
 
-      <footer className="mt-auto pt-6 flex flex-col items-center gap-6">
-        <div className="flex items-end justify-center gap-2 lg:gap-4 h-64 relative w-full overflow-visible">
-          <AnimatePresence>
-            {player.hand.map((card) => {
+        {/* Bottom Section - Fixed Height Footer */}
+        <footer className="h-[400px] shrink-0 mt-auto pt-6 flex flex-col items-center gap-6">
+          <div className="flex-1 flex items-end justify-center gap-2 lg:gap-4 relative w-full overflow-visible pb-4">
+            <AnimatePresence>
+              {player.hand.map((card) => {
                const isSelected = selectedCards.some(c => c.instanceId === card.instanceId);
+               let statusModifier = 0;
+               player.statusEffects.forEach(e => { 
+                 if (e.type === 'SHARP_EYE') statusModifier += e.value; 
+                 if (e.type === 'DEBUFF_ODDS') statusModifier += e.value; 
+               });
+
+               let relicBonus = 0;
+               player.relics.forEach(r => {
+                 if (r.effect.type === 'GLOBAL_SUCCESS_CHANCE') relicBonus += r.effect.value;
+               });
+
                return (
                 <CardUI
                   key={card.instanceId}
@@ -106,6 +137,9 @@ export function Game() {
                   disabled={phase !== "PLAYER_TURN" || player.energy < card.cost}
                   modifiers={player.oddsModifiers}
                   enemyDebuff={enemy?.debuffOdds || 0}
+                  playerStatBonus={player.stats.successRateBonus}
+                  statusModifier={statusModifier}
+                  relicBonus={relicBonus}
                   isSelected={isSelected}
                 />
               );
@@ -224,5 +258,6 @@ export function Game() {
         </div>
       </footer>
     </div>
+  </div>
   );
 }

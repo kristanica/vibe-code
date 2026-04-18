@@ -9,7 +9,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function FocusedCardModal() {
-  const { focusedCard, setFocusedCard } = useGameStore();
+  const { focusedCard, setFocusedCard, player, enemy } = useGameStore();
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -27,6 +27,27 @@ export function FocusedCardModal() {
     if (odds >= 50) return "text-yellow-400";
     return "text-red-400";
   };
+
+  // Calculate accurate odds
+  let statusModifier = 0;
+  if (focusedCard) {
+    player.statusEffects.forEach(e => { 
+      if (e.type === 'SHARP_EYE') statusModifier += e.value; 
+      if (e.type === 'DEBUFF_ODDS') statusModifier += e.value; 
+    });
+  }
+  
+  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
+  const totalBonus = player.stats.successRateBonus + statusModifier + relicBonus;
+
+  const finalOdds = focusedCard 
+    ? Math.max(5, Math.min(100, 
+        focusedCard.baseOdds + 
+        player.oddsModifiers.reduce((acc, m) => acc + m.value, 0) + 
+        (enemy?.debuffOdds || 0) + 
+        totalBonus
+      ))
+    : 0;
 
   return (
     <AnimatePresence>
@@ -180,16 +201,25 @@ export function FocusedCardModal() {
               <div className="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center z-20">
                 <div className="flex flex-col">
                   <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                    Base Success Rate
+                    Base Odds
                   </span>
-                  <span
-                    className={cn(
-                      "text-2xl font-black italic tracking-tighter",
-                      getProbabilityColor(focusedCard.baseOdds),
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-2xl font-black italic tracking-tighter",
+                        getProbabilityColor(finalOdds - totalBonus),
+                      )}
+                    >
+                      {finalOdds - totalBonus}%
+                    </span>
+                    {totalBonus !== 0 && (
+                      <div className="px-1.5 py-0.5 bg-indigo-500/20 rounded border border-indigo-500/30">
+                        <span className="text-[9px] font-black text-indigo-300 uppercase">
+                          {totalBonus > 0 ? '+' : ''}{totalBonus}% Bonus
+                        </span>
+                      </div>
                     )}
-                  >
-                    {focusedCard.baseOdds}%
-                  </span>
+                  </div>
                 </div>
                 <div className="px-4 py-2 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   {focusedCard.rarity} CLASS

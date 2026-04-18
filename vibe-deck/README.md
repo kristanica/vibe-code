@@ -1,73 +1,48 @@
-# React + TypeScript + Vite
+# 🎰 Probability Deck
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-stakes, roguelike deck-builder where your greatest weapon—and your biggest enemy—is **Probability**. 
 
-Currently, two official plugins are available:
+This project is **VIBE CODED** with **Gemini**. 🤖✨
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🃏 Game Overview
 
-## React Compiler
+In **Probability Deck**, you don't just play cards; you gamble on them. Every card has a **Success Rate**. Land the hit, and you'll deal devastating damage or build an impenetrable defense. Fail the roll, and you might take damage, discard your hand, or worse.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🚀 Key Features
 
-## Expanding the ESLint configuration
+*   **Dynamic Probability:** Success rates aren't static. Your permanent stats, active status effects (like *Sharp Eye*), and unique relics all shift the odds in your favor.
+*   **The Relic System:** Discover powerful passive items like the **Steaming Mug** for extra energy or the **Iron Plate** for early-battle protection.
+*   **Unpredictable Enemies:** Face off against varied threats, from predictable **Street Thugs** to the chaotic **System Glitch** and the formidable **Pit Boss**.
+*   **Dynamic Scaling:** The challenge intensifies as you descend through multiple Acts. Every victory grants EXP, allowing you to level up and choose permanent stat upgrades.
+*   **High-Stakes Events:** Encounter random scenarios where you must weigh massive rewards against dangerous permanent costs.
+*   **Vibe-Driven UI:** A polished, stable layout with retro-style procedural sound effects and explosive visual feedback.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🛠️ Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+*   **Framework:** React (TypeScript)
+*   **Styling:** Tailwind CSS
+*   **State Management:** Zustand
+*   **Animations:** Framer Motion
+*   **Audio:** Native Web Audio API (Procedurally generated sound FX)
+*   **Icons:** Lucide React
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## ⚡ Development
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+This project was built using the **Gemini CLI**, leveraging a "Research -> Strategy -> Execution" workflow. It stands as a testament to the power of **Vibe Coding**—where high-level intent and rapid iteration meet cutting-edge AI orchestration.
+
+### Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+*“The house always wins... unless you rig the deck.”*

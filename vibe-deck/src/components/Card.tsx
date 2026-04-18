@@ -14,11 +14,27 @@ interface CardProps {
   disabled?: boolean;
   modifiers: ProbabilityModifier[];
   enemyDebuff: number;
+  playerStatBonus?: number;
+  statusModifier?: number;
+  relicBonus?: number;
   isSelected?: boolean;
 }
 
-export function Card({ card, onClick, onInfoClick, disabled, modifiers, enemyDebuff, isSelected }: CardProps) {
-  const finalOdds = Math.max(5, Math.min(100, card.baseOdds + modifiers.reduce((acc, m) => acc + m.value, 0) + enemyDebuff));
+export function Card({ 
+  card, 
+  onClick, 
+  onInfoClick, 
+  disabled, 
+  modifiers, 
+  enemyDebuff, 
+  playerStatBonus = 0,
+  statusModifier = 0,
+  relicBonus = 0,
+  isSelected 
+}: CardProps) {
+  const totalBonus = playerStatBonus + statusModifier + relicBonus;
+  const displayOdds = Math.max(5, Math.min(100, card.baseOdds + modifiers.reduce((acc, m) => acc + m.value, 0) + enemyDebuff));
+  const finalOdds = Math.max(5, Math.min(100, displayOdds + totalBonus));
   
   const getProbabilityColor = (odds: number) => {
     if (odds >= 75) return 'text-emerald-400';
@@ -94,13 +110,22 @@ export function Card({ card, onClick, onInfoClick, disabled, modifiers, enemyDeb
         />
 
         <div className="w-full flex-1 flex flex-col justify-center items-center p-3 relative z-20">
-          <h3 className="w-full font-black uppercase italic text-center text-sm leading-tight mb-3 tracking-tighter">
+          <h3 className="w-full font-black uppercase italic text-center text-sm leading-tight mb-2 tracking-tighter">
             {card.name}
           </h3>
-          <div className={cn("text-4xl font-black italic tracking-tighter", getProbabilityColor(finalOdds))}>
-            {finalOdds}%
+          <div className="flex flex-col items-center">
+            <div className={cn("text-4xl font-black italic tracking-tighter leading-none", getProbabilityColor(displayOdds))}>
+              {displayOdds}%
+            </div>
+            {totalBonus !== 0 && (
+              <div className="mt-1 px-1.5 py-0.5 bg-indigo-500/20 rounded border border-indigo-500/30">
+                <span className="text-[9px] font-black text-indigo-300 uppercase tracking-tighter whitespace-nowrap">
+                  {totalBonus > 0 ? '+' : ''}{totalBonus}% Success Chance
+                </span>
+              </div>
+            )}
           </div>
-          <div className="text-[8px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">Success Rate</div>
+          <div className="text-[8px] uppercase font-bold text-slate-500 tracking-widest mt-2 text-center leading-none">Success Rate</div>
         </div>
       </div>
     </motion.div>

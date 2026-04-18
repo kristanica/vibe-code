@@ -62,6 +62,7 @@ type EnemyMove = {
 type Enemy = {
   id: string;
   name: string;
+  type: 'NORMAL' | 'ELITE' | 'BOSS';
   hp: number;
   maxHp: number;
   block: number;
@@ -72,6 +73,27 @@ type Enemy = {
   passiveDescription?: string;
   debuffOdds?: number;
   statusEffects: StatusEffect[];
+};
+
+type RelicEffect = {
+  type: 'START_BATTLE_BLOCK' | 'START_TURN_ENERGY' | 'SUCCESS_CHIPS' | 'FAILURE_BLOCK' | 'GLOBAL_SUCCESS_CHANCE' | 'ATTACK_BONUS' | 'HEAL_ON_VICTORY';
+  value: number;
+};
+
+type Relic = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  effect: RelicEffect;
+  rarity: 'COMMON' | 'RARE' | 'LEGENDARY';
+  price?: number;
+};
+
+type PlayerStats = {
+  attackBonus: number;
+  maxHpBonus: number;
+  successRateBonus: number;
 };
 
 type PlayerState = {
@@ -87,11 +109,16 @@ type PlayerState = {
   chips: number;
   oddsModifiers: ProbabilityModifier[];
   statusEffects: StatusEffect[];
+  relics: Relic[];
   discardsRemaining: number;
   shufflesRemaining: number;
+  level: number;
+  exp: number;
+  nextLevelExp: number;
+  stats: PlayerStats;
 };
 
-type NodeType = 'BATTLE' | 'ELITE' | 'SHOP' | 'REST' | 'EVENT' | 'BOSS';
+type NodeType = 'BATTLE' | 'ELITE' | 'SHOP' | 'REST' | 'EVENT' | 'BOSS' | 'TREASURE';
 
 type MapNode = {
   id: string;
@@ -114,18 +141,21 @@ type GameEvent = {
   options: EventOption[];
 };
 
-type GamePhase = 'INITIALIZING' | 'BATTLE_START' | 'PLAYER_TURN' | 'RESOLUTION' | 'ENEMY_TURN' | 'BATTLE_END' | 'DRAFT' | 'SHOP' | 'MAP' | 'STARTER_SELECT' | 'EVENT';
+type GamePhase = 'INITIALIZING' | 'BATTLE_START' | 'PLAYER_TURN' | 'RESOLUTION' | 'ENEMY_TURN' | 'BATTLE_END' | 'DRAFT' | 'SHOP' | 'MAP' | 'STARTER_SELECT' | 'EVENT' | 'LEVEL_UP' | 'TREASURE' | 'ACT_CLEAR';
 
 type GameState = {
   phase: GamePhase;
   player: PlayerState;
   enemy: Enemy | null;
   floor: number;
+  act: number;
   log: string[];
   lastResult: 'SUCCESS' | 'FAILURE' | null;
   bannerText: string | null;
   draftOptions: GameCard[];
   shopOptions: GameCard[];
+  shopRelicOptions: Relic[];
+  treasureOptions: Relic[];
   currentEvent: GameEvent | null;
   selectedCards: GameCard[];
   focusedCard: GameCard | null;
@@ -150,10 +180,13 @@ interface GameActions {
   selectMapNode: (node: MapNode) => void;
   resolveEventOption: (option: EventOption) => void;
   buyCard: (card: GameCard) => void;
+  buyRelic: (relic: Relic) => void;
+  pickTreasure: (relic: Relic) => void;
   leaveShop: () => void;
   discardSelected: () => void;
   shuffleHand: () => void;
   instaWin: () => void;
+  upgradeStat: (stat: keyof PlayerStats) => void;
   setBanner: (text: string) => void;
   clearBanner: () => void;
 }

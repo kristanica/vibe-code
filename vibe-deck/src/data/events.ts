@@ -1,4 +1,4 @@
-import { STARTER_CARDS } from "./starter";
+import { RELICS } from "./relics";
 
 export const EVENTS: GameEvent[] = [
   {
@@ -8,74 +8,121 @@ export const EVENTS: GameEvent[] = [
     options: [
       { 
         label: 'Pay 50 Chips', 
-        description: 'Remove the first card in your deck.', 
+        description: 'Remove 1 random card from your deck.', 
         cost: 50, 
         action: (state) => {
-          const newDeck = [...state.player.deck]; 
-          const removed = newDeck.shift();
-          state.addLog(`Shady Dealer took your ${removed?.name}.`);
+          const deck = [...state.player.deck];
+          if (deck.length > 0) {
+            const index = Math.floor(Math.random() * deck.length);
+            const removed = deck.splice(index, 1)[0];
+            state.addLog(`Shady Dealer took your ${removed.name}.`);
+          }
         }
       },
       { label: 'Leave', description: 'Just walk away.', action: () => {} }
     ]
   },
   {
-    id: 'vegas-luck',
-    title: 'Vegas Luck',
-    description: 'You find a discarded betting slip on the floor. It might still be valid!',
+    id: 'gamblers-contract',
+    title: "The Gambler's Contract",
+    description: 'A slick man in a pinstripe suit offers you a golden pen. "Sign here, and your luck will change... but it will cost you your safety net."',
     options: [
       { 
-        label: 'Check the Slip', 
-        description: '50% chance to gain 75 chips, 50% chance to lose 5 HP.', 
+        label: 'Sign the Contract', 
+        description: 'Gain +5% Permanent Success Rate, but remove 2 random cards from your deck.', 
         action: (state) => {
-          if (Math.random() > 0.5) {
-            state.addLog("JACKPOT! winner.");
-            // Note: Chips/HP updates will be handled by store state setters passed via state param
+          const deck = [...state.player.deck];
+          const removed: string[] = [];
+          for (let i = 0; i < 2; i++) {
+            if (deck.length > 0) {
+              const index = Math.floor(Math.random() * deck.length);
+              removed.push(deck.splice(index, 1)[0].name);
+            }
+          }
+          state.addLog(`Contract Signed: +5% Luck. Lost ${removed.join(' and ')}.`);
+        }
+      },
+      { label: 'Decline', description: 'Some prices are too high.', action: () => {} }
+    ]
+  },
+  {
+    id: 'blood-bank',
+    title: 'The Underground Blood Bank',
+    description: 'The smell of antiseptic is overwhelming. A nurse looks at you expectantly. "We pay well for... fresh donations."',
+    options: [
+      { 
+        label: 'Donate Heavily', 
+        description: 'Lose 10 HP, Gain 150 Chips.', 
+        action: (state) => {
+          state.addLog("You feel lightheaded, but your pockets are heavy (+150 Chips).");
+        }
+      },
+      { 
+        label: 'Minor Donation', 
+        description: 'Lose 4 HP, Gain 50 Chips.', 
+        action: (state) => {
+          state.addLog("A quick prick and you're on your way (+50 Chips).");
+        }
+      },
+      { label: 'Leave', description: 'You dislike needles.', action: () => {} }
+    ]
+  },
+  {
+    id: 'broken-slot-machine',
+    title: 'The Glitched Slot',
+    description: 'A slot machine is sparking in the corner. The screen is flickering between different jackpot symbols.',
+    options: [
+      { 
+        label: 'Kick the Machine', 
+        description: '40% Jackpot (Rare Relic), 60% Alarm (Lose 6 HP).', 
+        action: (state) => {
+          if (Math.random() < 0.4) {
+             const rareRelics = RELICS.filter(r => r.rarity === 'RARE');
+             const relic = rareRelics[Math.floor(Math.random() * rareRelics.length)];
+             state.addLog(`JACKPOT! You smashed the glass and grabbed ${relic.name}!`);
           } else {
-            state.addLog("Bad beat. It was a trap.");
+             state.addLog("ALARM! The machine shocked you for 6 damage.");
           }
         }
       },
-      { label: 'Ignore', description: 'Not worth the risk.', action: () => {} }
+      { label: 'Walk Away', description: 'Not worth the trouble.', action: () => {} }
     ]
   },
   {
-    id: 'lucky-horseshoe',
-    title: 'The Lucky Horseshoe',
-    description: 'You spot a glowing horseshoe hanging over a door. Do you reach for it?',
+    id: 'mysterious-fog',
+    title: 'The Foggy Mirror',
+    description: 'You see a reflection of your potential in a cracked mirror. It looks... stronger, but colder.',
     options: [
       { 
-        label: 'Touch for Luck', 
-        description: 'Gain +10% Success Rate for 5 turns, but lose 3 HP.', 
+        label: 'Embrace Potential', 
+        description: 'Gain +2 Attack Bonus, but lose 5 Max HP.', 
         action: (state) => {
-          state.addLog("You feel luckier, but your hand stings.");
+          state.addLog("Strength flows through you, but your body feels fragile.");
         }
       },
-      { label: 'Leave it', description: 'Leave the spirits alone.', action: () => {} }
+      { label: 'Shatter Mirror', description: 'Ignore the temptation.', action: () => {} }
     ]
   },
   {
-    id: 'high-stakes-table',
-    title: 'High Stakes Table',
-    description: 'A high-stakes game is in progress. They invite you to join for a single round.',
+    id: 'relic-trader',
+    title: 'The Relic Collector',
+    description: 'An old woman is sorting through a pile of junk. "I trade in curiosities... do you have anything to offer?"',
     options: [
       { 
-        label: 'Bet Big (100 Chips)', 
-        description: 'Gain a RARE card, or lose 100 chips.', 
-        cost: 100, 
+        label: 'Trade a Card', 
+        description: 'Remove 1 random card, Gain a random COMMON relic.', 
         action: (state) => {
-          const rareCards = STARTER_CARDS.filter(c => c.rarity === 'RARE');
-          const card = rareCards[Math.floor(Math.random() * rareCards.length)];
-          state.addLog(`You won the round and walked away with ${card.name}!`);
+          const deck = [...state.player.deck];
+          if (deck.length > 0) {
+            const index = Math.floor(Math.random() * deck.length);
+            const removed = deck.splice(index, 1)[0];
+            const commons = RELICS.filter(r => r.rarity === 'COMMON');
+            const relic = commons[Math.floor(Math.random() * commons.length)];
+            state.addLog(`Traded ${removed.name} for ${relic.name}.`);
+          }
         }
       },
-      { 
-        label: 'Watch', 
-        description: 'Just observe. (Gain 10 chips)', 
-        action: (state) => {
-          state.addLog("You learned a few tricks and found 10 chips on the floor.");
-        }
-      }
+      { label: 'Refuse', description: 'Keep your deck as it is.', action: () => {} }
     ]
   }
 ];

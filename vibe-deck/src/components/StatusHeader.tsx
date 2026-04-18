@@ -5,15 +5,18 @@ import { useGameStore } from "../store/useGameStore";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { StatusAuras } from "./StatusAuras";
+import { StatsModal } from "./StatsModal";
+import { useState } from "react";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function StatusHeader() {
-  const { player, floor, isGodMode, toggleGodMode } = useGameStore();
+  const { player, floor, act, isGodMode, toggleGodMode } = useGameStore();
   const playerControls = useAnimation();
   const prevHp = useRef(player.hp);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   useEffect(() => {
     if (player.hp < prevHp.current && !isGodMode) {
@@ -31,84 +34,137 @@ export function StatusHeader() {
   }, [player.hp, playerControls, isGodMode]);
 
   return (
-    <header className="flex flex-col mb-6">
-      <div className="flex justify-between items-center w-full mb-4">
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">
-              Status
-            </span>
+    <header className="flex flex-col mb-4">
+      <StatsModal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} />
+      
+      {/* Top Bar: Primary Stats */}
+      <div className="flex justify-between items-center w-full mb-3">
+        <div className="flex items-center gap-4">
+          {/* Player Core Box */}
+          <div className="relative">
             <motion.div
               animate={playerControls}
-              className="flex items-center gap-3 bg-slate-900/50 p-2 px-3 rounded-lg border border-slate-800"
+              className="flex items-center gap-4 bg-slate-900 border-2 border-slate-800 p-2 px-4 rounded-2xl shadow-xl relative z-10"
             >
-              <div className="flex items-center gap-1.5">
-                <Heart className="text-red-500 fill-red-500" size={16} />
-                <span className="font-bold text-lg">
-                  {player.hp}/{player.maxHp}
-                </span>
+              <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black uppercase text-rose-500 mb-0.5">Vitality</span>
+                <div className="flex items-center gap-1.5">
+                  <Heart className="text-red-500 fill-red-500" size={14} />
+                  <span className="font-black text-xl italic tracking-tighter">
+                    {player.hp}<span className="text-slate-500 text-xs not-italic font-bold">/{player.maxHp}</span>
+                  </span>
+                </div>
               </div>
+
+              <div className="w-px h-8 bg-slate-800" />
+
+              <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black uppercase text-yellow-500 mb-0.5">Energy</span>
+                <div className="flex items-center gap-1.5">
+                  <Zap className="text-yellow-400 fill-yellow-400" size={14} />
+                  <span className="font-black text-xl italic tracking-tighter">
+                    {player.energy}<span className="text-slate-500 text-xs not-italic font-bold">/{player.maxEnergy}</span>
+                  </span>
+                </div>
+              </div>
+
               {player.block > 0 && (
                 <>
-                  <div className="w-px h-4 bg-slate-800" />
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="text-blue-400 fill-blue-400" size={16} />
-                    <span className="font-bold text-lg text-blue-400">
-                      {player.block}
-                    </span>
+                  <div className="w-px h-8 bg-slate-800" />
+                  <div className="flex flex-col items-center animate-bounce-slow">
+                    <span className="text-[8px] font-black uppercase text-blue-400 mb-0.5">Armor</span>
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="text-blue-400 fill-blue-400" size={14} />
+                      <span className="font-black text-xl italic tracking-tighter text-blue-400">
+                        {player.block}
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
-              <div className="w-px h-4 bg-slate-800" />
-              <div className="flex items-center gap-1.5">
-                <Zap className="text-yellow-400 fill-yellow-400" size={16} />
-                <span className="font-bold text-lg">
-                  {player.energy}/{player.maxEnergy}
-                </span>
-              </div>
             </motion.div>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">
-              Position
-            </span>
-            <div className="p-2 px-3 bg-slate-900/50 rounded-lg border border-slate-800">
-              <span className="font-bold text-lg">FLOOR {floor}/10</span>
+          {/* Position & Level (Condensed) */}
+          <div className="flex gap-2">
+            <div className="bg-slate-900/50 border border-slate-800 p-2 px-3 rounded-xl flex flex-col justify-center">
+               <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest leading-none mb-0.5">Act {act}</span>
+               <span className="font-black text-sm italic italic tracking-tight">FL {floor}/10</span>
             </div>
+            
+            <button 
+              onClick={() => setIsStatsModalOpen(true)}
+              className="bg-slate-900/50 border border-slate-800 p-2 px-3 rounded-xl flex flex-col justify-center group hover:border-indigo-500/50 transition-all active:scale-95"
+            >
+               <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest group-hover:text-indigo-300 transition-colors">Level {player.level}</span>
+               <div className="w-16 h-1.5 bg-slate-950 rounded-full mt-1 overflow-hidden relative">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(player.exp / player.nextLevelExp) * 100}%` }}
+                    className="h-full bg-indigo-500"
+                  />
+               </div>
+            </button>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <button
+           {/* Chips */}
+           <div className="bg-slate-900/80 border-2 border-yellow-600/30 p-2 px-4 rounded-2xl flex items-center gap-3">
+              <div className="text-yellow-500 text-xl font-black italic tracking-tighter">
+                ♦ {player.chips}
+              </div>
+              <span className="text-[8px] font-black uppercase text-yellow-600/50 tracking-[0.2em]">Credits</span>
+           </div>
+
+           {/* Mode Toggle */}
+           <button
             onClick={toggleGodMode}
             className={cn(
-              "px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border-2 transition-all duration-500 flex items-center gap-2",
+              "px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest border transition-all flex items-center gap-2",
               isGodMode 
-                ? "bg-amber-500 border-amber-400 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]" 
-                : "bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-700"
+                ? "bg-amber-500 border-amber-400 text-slate-950" 
+                : "bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300"
             )}
           >
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              isGodMode ? "bg-slate-950 animate-pulse" : "bg-slate-700"
-            )} />
-            {isGodMode ? "God Mode On" : "Player Mode"}
+            {isGodMode ? "GOD" : "RUN"}
           </button>
-
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">
-              Currency
-            </span>
-            <span className="font-bold text-xl text-yellow-500 italic uppercase">
-              ♦ {player.chips} CHIPS
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* Active Buffs & Debuffs */}
-      <StatusAuras statusEffects={player.statusEffects} align="left" />
+      {/* Bottom Bar: Effects & Relics */}
+      <div className="flex items-center gap-4">
+        {/* Buff Tray */}
+        <div className="flex-1 h-10 flex items-center px-0 transition-all">
+          <StatusAuras statusEffects={player.statusEffects} align="left" />
+        </div>
+
+        {/* Relic Tray */}
+        {player.relics.length > 0 && (
+          <div className="flex items-center gap-1.5 bg-amber-500/5 border border-amber-500/10 p-1 px-2 rounded-xl h-10">
+            {player.relics.map((relic) => (
+              <div 
+                key={relic.id} 
+                className="w-7 h-7 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-sm cursor-help group relative hover:border-amber-500/50 transition-colors"
+              >
+                {relic.icon}
+                
+                {/* Relic Tooltip */}
+                <div className="absolute top-full right-0 mt-3 w-44 p-3 bg-slate-900 border-2 border-slate-700 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-[200] scale-95 group-hover:scale-100">
+                  <div className="flex justify-between items-center mb-1 border-b border-slate-800 pb-1">
+                    <p className="text-[10px] font-black uppercase text-amber-400 tracking-tighter">{relic.name}</p>
+                    <span className="text-[7px] font-bold text-slate-500 uppercase">Relic</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium leading-tight italic">{relic.description}</p>
+                  
+                  {/* Decor arrow */}
+                  <div className="absolute top-[-7px] right-2 w-3 h-3 bg-slate-900 border-l-2 border-t-2 border-slate-700 transform rotate-[45deg]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </header>
   );
 }
