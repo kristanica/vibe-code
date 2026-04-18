@@ -1,20 +1,20 @@
-type CardType = 'ATTACK' | 'DEFENSE' | 'GAMBLE' | 'MODIFIER' | 'SYNERGY';
+type CardType = "ATTACK" | "DEFENSE" | "GAMBLE" | "MODIFIER" | "SYNERGY";
 
 type ProbabilityModifier = {
   source: string;
   value: number;
 };
 
-type StatusEffectType = 
-  | 'DODGE' 
-  | 'STRENGTH' 
-  | 'REGEN' 
-  | 'DEBUFF_ODDS' 
-  | 'SHARP_EYE' 
-  | 'VULNERABLE' 
-  | 'WEAK' 
-  | 'DOUBLE_DOWN'
-  | 'ARMOR';
+type StatusEffectType =
+  | "DODGE"
+  | "STRENGTH"
+  | "REGEN"
+  | "DEBUFF_ODDS"
+  | "SHARP_EYE"
+  | "VULNERABLE"
+  | "WEAK"
+  | "DOUBLE_DOWN"
+  | "ARMOR";
 
 type StatusEffect = {
   type: StatusEffectType;
@@ -49,11 +49,11 @@ type GameCard = {
   successEffect: GameEffect;
   failEffect?: GameEffect;
   description: string;
-  rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VOLATILE' | 'EXCLUSIVE';
+  rarity: "COMMON" | "UNCOMMON" | "RARE" | "VOLATILE" | "EXCLUSIVE";
   isVolatile?: boolean;
 };
 
-type EnemyIntent = 'ATTACK' | 'BLOCK' | 'DEBUFF' | 'SPECIAL' | 'BUFF' | 'HEAL';
+type EnemyIntent = "ATTACK" | "BLOCK" | "DEBUFF" | "SPECIAL" | "BUFF" | "HEAL";
 
 type EnemyMove = {
   id?: string;
@@ -65,31 +65,46 @@ type EnemyMove = {
   secondaryValue?: number;
   weight?: number; // For ADAPTIVE AI
   cooldown?: number; // Turns before it can be used again
-  animationType?: 'light' | 'heavy' | 'combo' | 'cast' | 'defend';
+  animationType?: "light" | "heavy" | "combo" | "cast" | "defend";
   requiredHpPercentage?: number; // Only use if HP < this %
 };
 
 type Enemy = {
   id: string;
   name: string;
-  type: 'NORMAL' | 'ELITE' | 'BOSS';
+  type: "NORMAL" | "ELITE" | "BOSS";
   hp: number;
   maxHp: number;
   block: number;
   moves: EnemyMove[];
   nextMoveIndex: number;
   intent: EnemyIntent;
-  aiType: 'SEQUENTIAL' | 'RANDOM' | 'ADAPTIVE';
-  attack?: number; 
+  aiType: "SEQUENTIAL" | "RANDOM" | "ADAPTIVE";
+  attack?: number;
   passiveDescription?: string;
   debuffOdds?: number;
   statusEffects: StatusEffect[];
   currentMoveCooldowns?: Record<number, number>; // index -> remaining cooldown
-  animationState?: 'idle' | 'light' | 'heavy' | 'combo' | 'cast' | 'defend' | 'hurt' | 'dead';
+  animationState?:
+    | "idle"
+    | "light"
+    | "heavy"
+    | "combo"
+    | "cast"
+    | "defend"
+    | "hurt"
+    | "dead";
 };
 
 type RelicEffect = {
-  type: 'START_BATTLE_BLOCK' | 'START_TURN_ENERGY' | 'SUCCESS_CHIPS' | 'FAILURE_BLOCK' | 'GLOBAL_SUCCESS_CHANCE' | 'ATTACK_BONUS' | 'HEAL_ON_VICTORY';
+  type:
+    | "START_BATTLE_BLOCK"
+    | "START_TURN_ENERGY"
+    | "SUCCESS_CHIPS"
+    | "FAILURE_BLOCK"
+    | "GLOBAL_SUCCESS_CHANCE"
+    | "ATTACK_BONUS"
+    | "HEAL_ON_VICTORY";
   value: number;
 };
 
@@ -99,7 +114,7 @@ type Relic = {
   description: string;
   icon: string;
   effect: RelicEffect;
-  rarity: 'COMMON' | 'RARE' | 'LEGENDARY';
+  rarity: "COMMON" | "RARE" | "LEGENDARY";
   price?: number;
 };
 
@@ -117,7 +132,7 @@ type PlayerState = {
   block: number;
   deck: GameCard[];
   hand: GameCard[];
-  discard: GameCard[]; 
+  discard: GameCard[];
   tempDiscard: GameCard[];
   chips: number;
   oddsModifiers: ProbabilityModifier[];
@@ -133,7 +148,14 @@ type PlayerState = {
   stats: PlayerStats;
 };
 
-type NodeType = 'BATTLE' | 'ELITE' | 'SHOP' | 'REST' | 'EVENT' | 'BOSS' | 'TREASURE';
+type NodeType =
+  | "BATTLE"
+  | "ELITE"
+  | "SHOP"
+  | "REST"
+  | "EVENT"
+  | "BOSS"
+  | "TREASURE";
 
 type MapNode = {
   id: string;
@@ -156,7 +178,21 @@ type GameEvent = {
   options: EventOption[];
 };
 
-type GamePhase = 'INITIALIZING' | 'BATTLE_START' | 'PLAYER_TURN' | 'RESOLUTION' | 'ENEMY_TURN' | 'BATTLE_END' | 'DRAFT' | 'SHOP' | 'MAP' | 'STARTER_SELECT' | 'EVENT' | 'LEVEL_UP' | 'TREASURE' | 'ACT_CLEAR';
+type GamePhase =
+  | "INITIALIZING"
+  | "BATTLE_START"
+  | "PLAYER_TURN"
+  | "RESOLUTION"
+  | "ENEMY_TURN"
+  | "BATTLE_END"
+  | "DRAFT"
+  | "SHOP"
+  | "MAP"
+  | "STARTER_SELECT"
+  | "EVENT"
+  | "LEVEL_UP"
+  | "TREASURE"
+  | "ACT_CLEAR";
 
 type GameState = {
   phase: GamePhase;
@@ -165,7 +201,7 @@ type GameState = {
   floor: number;
   act: number;
   log: string[];
-  lastResult: 'SUCCESS' | 'FAILURE' | null;
+  lastResult: "SUCCESS" | "FAILURE" | null;
   bannerText: string | null;
   draftOptions: GameCard[];
   shopOptions: GameCard[];
@@ -179,10 +215,13 @@ type GameState = {
   isGodMode: boolean;
   removalPrice: number;
   upgradePrice: number;
-  shopSelectionMode: 'NONE' | 'REMOVE' | 'UPGRADE';
+  shopSelectionMode: "NONE" | "REMOVE" | "UPGRADE";
+  score: number;
 };
 
 interface GameActions {
+  addScore: (amount: number) => void;
+  resetScore: () => void;
   startGame: () => void;
   drawCards: (count: number) => void;
   playCard: (card: GameCard) => void;
@@ -209,5 +248,5 @@ interface GameActions {
   clearBanner: () => void;
   removeCard: (instanceId: string) => void;
   upgradeCard: (instanceId: string) => void;
-  setShopSelectionMode: (mode: 'NONE' | 'REMOVE' | 'UPGRADE') => void;
+  setShopSelectionMode: (mode: "NONE" | "REMOVE" | "UPGRADE") => void;
 }

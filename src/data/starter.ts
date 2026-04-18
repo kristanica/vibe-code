@@ -7,7 +7,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Safe Strike",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 85,
+    baseOdds: 95,
     successEffect: { damage: 5 },
     failEffect: { damage: 2 },
     description:
@@ -19,7 +19,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Heavy Slam",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 60,
+    baseOdds: 75,
     successEffect: { damage: 14 },
     failEffect: { nothing: true },
     description:
@@ -31,7 +31,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Iron Shield",
     type: "DEFENSE",
     cost: 1,
-    baseOdds: 80,
+    baseOdds: 90,
     successEffect: { block: 8 },
     failEffect: { block: 2 },
     description:
@@ -43,7 +43,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Shield Bash",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 75,
+    baseOdds: 85,
     successEffect: { damage: 6, block: 6 },
     failEffect: { block: 3 },
     description:

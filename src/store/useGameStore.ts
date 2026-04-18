@@ -19,6 +19,10 @@ import { RELICS } from "../data/relics";
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
   phase: "INITIALIZING",
+  score: 0,
+  addScore: (amount: number) =>
+    set((state) => ({ score: state.score + amount })),
+  resetScore: () => set({ score: 0 }),
   player: {
     hp: 20,
     maxHp: 20,
@@ -80,12 +84,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           ),
         };
       } else {
-        if (state.phase === 'SHOP') {
-          if (state.shopSelectionMode === 'REMOVE') {
+        if (state.phase === "SHOP") {
+          if (state.shopSelectionMode === "REMOVE") {
             get().removeCard(card.instanceId!);
             return { selectedCards: [] };
           }
-          if (state.shopSelectionMode === 'UPGRADE') {
+          if (state.shopSelectionMode === "UPGRADE") {
             get().upgradeCard(card.instanceId!);
             return { selectedCards: [] };
           }
@@ -97,20 +101,26 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   removeCard: (instanceId: string) => {
     set((state) => {
       if (state.player.chips < state.removalPrice) return state;
-      const nextDeck = state.player.deck.filter(c => c.instanceId !== instanceId);
-      const nextHand = state.player.hand.filter(c => c.instanceId !== instanceId);
-      const nextDiscard = state.player.discard.filter(c => c.instanceId !== instanceId);
-      
+      const nextDeck = state.player.deck.filter(
+        (c) => c.instanceId !== instanceId,
+      );
+      const nextHand = state.player.hand.filter(
+        (c) => c.instanceId !== instanceId,
+      );
+      const nextDiscard = state.player.discard.filter(
+        (c) => c.instanceId !== instanceId,
+      );
+
       return {
-        player: { 
-          ...state.player, 
+        player: {
+          ...state.player,
           chips: state.player.chips - state.removalPrice,
           deck: nextDeck,
           hand: nextHand,
-          discard: nextDiscard
+          discard: nextDiscard,
         },
-        shopSelectionMode: 'NONE',
-        log: [`Removed card from deck.`, ...state.log]
+        shopSelectionMode: "NONE",
+        log: [`Removed card from deck.`, ...state.log],
       };
     });
   },
@@ -118,7 +128,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   upgradeCard: (instanceId: string) => {
     set((state) => {
       if (state.player.chips < state.upgradePrice) return state;
-      
+
       const upgradeOne = (c: GameCard): GameCard => {
         if (c.instanceId !== instanceId) return c;
         const nextCost = Math.max(0, c.cost - 1);
@@ -126,7 +136,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           ...c,
           name: `${c.name}+`,
           cost: nextCost,
-          baseOdds: Math.min(100, c.baseOdds + 10)
+          baseOdds: Math.min(100, c.baseOdds + 10),
         };
       };
 
@@ -136,15 +146,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           chips: state.player.chips - state.upgradePrice,
           deck: state.player.deck.map(upgradeOne),
           hand: state.player.hand.map(upgradeOne),
-          discard: state.player.discard.map(upgradeOne)
+          discard: state.player.discard.map(upgradeOne),
         },
-        shopSelectionMode: 'NONE',
-        log: [`Upgraded card!`, ...state.log]
+        shopSelectionMode: "NONE",
+        log: [`Upgraded card!`, ...state.log],
       };
     });
   },
 
-  setShopSelectionMode: (mode: 'NONE' | 'REMOVE' | 'UPGRADE') => set({ shopSelectionMode: mode }),
+  setShopSelectionMode: (mode: "NONE" | "REMOVE" | "UPGRADE") =>
+    set({ shopSelectionMode: mode }),
 
   clearSelection: () => set({ selectedCards: [] }),
   setFocusedCard: (card: GameCard | null) => set({ focusedCard: card }),
@@ -990,6 +1001,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set({ lastResult: isSuccess ? "SUCCESS" : "FAILURE", selectedCards: [] });
     setTimeout(() => set({ lastResult: null }), 800);
 
+    // Award points for playing a card (success = 10, fail = 2)
+    if (isSuccess) {
+      get().addScore(10);
+    } else {
+      get().addScore(2);
+    }
+
     set((state) => {
       const { player, enemy, isGodMode, floor } = state;
       const {
@@ -1013,6 +1031,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       const nextLog = [...logs, ...state.log];
 
       if (nextEnemy && nextEnemy.hp <= 0) {
+        // Award points for defeating an enemy (normal = 100, elite = 250, boss = 500)
+        let scoreAward = 100;
+        if (nextEnemy.type === "ELITE") scoreAward = 250;
+        if (nextEnemy.type === "BOSS") scoreAward = 500;
+        get().addScore(scoreAward);
         const v = calculateVictoryState(
           nextPlayer,
           nextEnemy,
