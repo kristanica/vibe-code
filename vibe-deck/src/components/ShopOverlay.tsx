@@ -1,0 +1,117 @@
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingCart, ArrowRight } from "lucide-react";
+import { Card as CardUI } from "./Card";
+import { useGameStore } from "../store/useGameStore";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function ShopOverlay() {
+  const { phase, player, shopOptions, buyCard, leaveShop, setFocusedCard } = useGameStore();
+
+  if (phase !== "SHOP") return null;
+
+  return (
+    <div className="fixed inset-0 bg-slate-950 z-[130] flex flex-col items-center justify-center p-8 overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-yellow-500/10 blur-[120px] rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.05)_0%,transparent_70%)]" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative z-10 w-full max-w-6xl flex flex-col h-full"
+      >
+        {/* Shop Header */}
+        <header className="flex justify-between items-end mb-12 border-b border-slate-800 pb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-500">
+                <ShoppingCart size={24} />
+              </div>
+              <span className="text-yellow-500 font-black tracking-[0.4em] uppercase text-xs">
+                Premium Exchange
+              </span>
+            </div>
+            <h2 className="text-6xl font-black uppercase italic tracking-tighter text-white">
+              The High Roller Shop
+            </h2>
+          </div>
+
+          <div className="flex flex-col items-end gap-4">
+             <div className="bg-slate-900 border-2 border-yellow-500/50 p-4 px-6 rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <span className="text-[10px] font-black uppercase text-yellow-500/70 block mb-1">Available Funds</span>
+                <span className="text-3xl font-black text-white italic tracking-tighter">♦ {player.chips} CHIPS</span>
+             </div>
+             
+             <button
+               onClick={leaveShop}
+               className="group flex items-center gap-3 px-8 py-3 bg-white text-slate-950 rounded-xl font-black uppercase italic tracking-tighter hover:bg-yellow-400 transition-all active:scale-95"
+             >
+               Leave Shop
+               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+             </button>
+          </div>
+        </header>
+
+        {/* Card Grid */}
+        <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-12 justify-items-center py-4">
+            <AnimatePresence mode="popLayout">
+              {shopOptions.map((card) => (
+                <motion.div
+                  key={card.instanceId}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  className="flex flex-col items-center gap-6"
+                >
+                  <CardUI
+                    card={card}
+                    onClick={() => setFocusedCard(card)}
+                    onInfoClick={() => setFocusedCard(card)}
+                    modifiers={[]}
+                    enemyDebuff={0}
+                  />
+
+                  <button
+                    onClick={() => buyCard(card)}
+                    disabled={player.chips < (card.price || 0)}
+                    className={cn(
+                      "w-full py-3 rounded-xl font-black uppercase italic tracking-tighter border-2 transition-all flex flex-col items-center group/btn",
+                      player.chips >= (card.price || 0)
+                        ? "bg-slate-900 border-yellow-500/50 text-white hover:border-yellow-400 hover:bg-slate-800"
+                        : "bg-slate-950 border-slate-800 text-slate-700 cursor-not-allowed"
+                    )}
+                  >
+                    <span className="text-[10px] opacity-60 mb-0.5 group-hover/btn:opacity-100 transition-opacity">Buy for</span>
+                    <span className="text-lg">♦ {card.price}</span>
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            
+            {shopOptions.length === 0 && (
+              <div className="col-span-full py-20 text-center">
+                 <p className="text-slate-500 font-bold uppercase tracking-widest italic">Inventory Sold Out</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Footer info */}
+        <footer className="mt-8 py-6 border-t border-slate-900 flex justify-center">
+           <p className="text-slate-600 text-[10px] font-bold uppercase tracking-[0.3em]">
+             New Inventory arrivals every 5 floors
+           </p>
+        </footer>
+      </motion.div>
+    </div>
+  );
+}

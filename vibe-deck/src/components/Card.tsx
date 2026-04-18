@@ -1,8 +1,7 @@
 import { motion } from 'framer-motion';
-import { Zap, Shield, Swords, Sparkles, Info, RotateCcw } from 'lucide-react';
+import { Zap, Shield, Swords, Sparkles, Info } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useState } from 'react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,14 +10,14 @@ function cn(...inputs: ClassValue[]) {
 interface CardProps {
   card: GameCard;
   onClick: () => void;
+  onInfoClick?: () => void;
   disabled?: boolean;
   modifiers: ProbabilityModifier[];
   enemyDebuff: number;
   isSelected?: boolean;
 }
 
-export function Card({ card, onClick, disabled, modifiers, enemyDebuff, isSelected }: CardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+export function Card({ card, onClick, onInfoClick, disabled, modifiers, enemyDebuff, isSelected }: CardProps) {
   const finalOdds = Math.max(5, Math.min(100, card.baseOdds + modifiers.reduce((acc, m) => acc + m.value, 0) + enemyDebuff));
   
   const getProbabilityColor = (odds: number) => {
@@ -35,145 +34,75 @@ export function Card({ card, onClick, disabled, modifiers, enemyDebuff, isSelect
     }
   };
 
-  const handleFlip = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsFlipped(!isFlipped);
-  };
-
   return (
-    <div className="relative w-40 h-56 perspective-1000 group">
-      <motion.div
-        layout
-        initial={false}
-        animate={{ 
-          rotateY: isFlipped ? 180 : 0, 
-          y: isSelected ? -40 : (isFlipped ? 0 : 0)
-        }}
-        whileHover={!disabled && !isFlipped && !isSelected ? { y: -20 } : {}}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
-        style={{ transformStyle: "preserve-3d" }}
-        className="w-full h-full relative cursor-pointer"
-        onClick={onClick}
+    <motion.div 
+      layout
+      initial={{ y: 200, opacity: 0, scale: 0.5, rotateY: 90 }}
+      animate={{ 
+        y: isSelected ? -40 : 0, 
+        opacity: 1, 
+        scale: 1, 
+        rotateY: 0 
+      }}
+      exit={{ 
+        x: 500, 
+        opacity: 0, 
+        scale: 0.8, 
+        rotate: 15,
+        transition: { duration: 0.3 } 
+      }}
+      whileHover={!disabled && !isSelected ? { y: -20, scale: 1.05 } : {}}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      className="relative w-40 h-56 perspective-1000 group cursor-pointer"
+      onClick={onClick}
+    >
+      <div
+        className={cn(
+          "absolute inset-0 rounded-xl border-2 flex flex-col items-center text-left bg-slate-900 overflow-hidden shadow-2xl transition-colors duration-300",
+          disabled ? "opacity-50 grayscale border-slate-800" : (isSelected ? "border-indigo-400 ring-4 ring-indigo-500/30" : "border-slate-700 hover:border-indigo-500"),
+          card.rarity === 'VOLATILE' ? 'ring-2 ring-purple-500/50' : ''
+        )}
       >
-        {/* FRONT FACE */}
-        <div
-          className={cn(
-            "absolute inset-0 backface-hidden rounded-xl border-2 p-3 flex flex-col items-center text-left bg-slate-900 overflow-hidden shadow-2xl transition-colors duration-300",
-            disabled ? "opacity-50 grayscale border-slate-800" : (isSelected ? "border-indigo-400 ring-4 ring-indigo-500/30" : "border-slate-700 hover:border-indigo-500"),
-            card.rarity === 'VOLATILE' ? 'ring-2 ring-purple-500/50' : ''
-          )}
-        >
-          {/* Flip Button (Front) */}
-          <button
-            onClick={handleFlip}
-            className="absolute top-2 left-2 z-20 p-1 rounded-md bg-slate-800/80 hover:bg-indigo-600 text-slate-400 hover:text-white transition-colors"
-            title="Card Intel"
-          >
-            <Info size={14} />
-          </button>
-
-          {/* Probability Gauge Background */}
-          <div 
-            className="absolute bottom-0 left-0 w-full bg-indigo-500/10 transition-all duration-500" 
-            style={{ height: `${finalOdds}%` }} 
-          />
-
-          <div className="w-full flex justify-end items-start mb-2 relative z-10">
-            <div className="flex items-center gap-0.5 bg-slate-800 px-1.5 py-0.5 rounded text-yellow-400 font-bold text-xs">
-              {card.cost} <Zap size={10} className="fill-yellow-400" />
-            </div>
-          </div>
-
-          <span className="w-full text-[10px] font-black uppercase text-slate-500 tracking-tighter flex items-center gap-1 mb-1 relative z-10">
+        {/* Opaque Header Area */}
+        <div className="w-full bg-slate-950 border-b border-slate-800 p-2 px-3 flex justify-between items-center relative z-30">
+          <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter flex items-center gap-1">
             {getTypeIcon()} {card.type}
           </span>
+          <div className="flex items-center gap-0.5 bg-slate-800 px-1.5 py-0.5 rounded text-yellow-400 font-bold text-[10px]">
+            {card.cost} <Zap size={8} className="fill-yellow-400" />
+          </div>
+        </div>
 
-          <h3 className="w-full font-black uppercase italic text-sm leading-tight mb-2 tracking-tighter relative z-10">
+        {/* Flip Button (Front) */}
+        {onInfoClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onInfoClick();
+            }}
+            className="absolute bottom-2 left-2 z-40 p-2 rounded-full bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white transition-all shadow-lg border border-slate-700 active:scale-90"
+            title="Card Intel"
+          >
+            <Info size={16} />
+          </button>
+        )}
+
+        {/* Probability Gauge Background */}
+        <div 
+          className="absolute bottom-0 left-0 w-full bg-indigo-500/10 transition-all duration-700 z-10" 
+          style={{ height: `${finalOdds}%` }} 
+        />
+
+        <div className="w-full flex-1 flex flex-col justify-center items-center p-3 relative z-20">
+          <h3 className="w-full font-black uppercase italic text-center text-sm leading-tight mb-3 tracking-tighter">
             {card.name}
           </h3>
-
-          <div className="w-full flex-1 flex flex-col justify-center items-center relative z-10">
-            <div className={cn("text-3xl font-black italic tracking-tighter mb-1", getProbabilityColor(finalOdds))}>
-              {finalOdds}%
-            </div>
-            <div className="text-[8px] uppercase font-bold text-slate-500 tracking-widest">Success Rate</div>
+          <div className={cn("text-4xl font-black italic tracking-tighter", getProbabilityColor(finalOdds))}>
+            {finalOdds}%
           </div>
+          <div className="text-[8px] uppercase font-bold text-slate-500 tracking-widest mt-1 text-center">Success Rate</div>
         </div>
-
-        {/* BACK FACE */}
-        <div
-          style={{ transform: "rotateY(180deg)" }}
-          className={cn(
-            "absolute inset-0 backface-hidden rounded-xl border-2 border-indigo-500/50 p-4 flex flex-col bg-slate-800 overflow-hidden shadow-2xl"
-          )}
-        >
-          {/* Flip Button (Back) */}
-          <button
-            onClick={handleFlip}
-            className="absolute top-2 left-2 z-20 p-1 rounded-md bg-slate-700 hover:bg-indigo-600 text-indigo-300 hover:text-white transition-colors shadow-lg"
-          >
-            <RotateCcw size={14} />
-          </button>
-
-          <div className="flex items-center justify-end mb-3 border-b border-slate-700 pb-2">
-             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Card Intel</span>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-            <p className="text-[11px] font-bold text-slate-400 leading-relaxed mb-4 italic">
-              "{card.description}"
-            </p>
-
-            <div className="space-y-3">
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Success
-                </span>
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 flex flex-wrap gap-1">
-                  {card.successEffect.damage && (
-                    <span className="text-[10px] font-bold text-emerald-300">Deal {card.successEffect.damage} Damage</span>
-                  )}
-                  {card.successEffect.block && (
-                    <span className="text-[10px] font-bold text-emerald-300">Block {card.successEffect.block} Damage</span>
-                  )}
-                  {card.successEffect.oddsModifier && (
-                    <span className="text-[10px] font-bold text-indigo-300">+{card.successEffect.oddsModifier}% Success Next Play</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase text-rose-400 tracking-widest flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  Failure
-                </span>
-                <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-2">
-                  {card.failEffect && !card.failEffect.nothing ? (
-                    <div className="flex flex-wrap gap-1">
-                      {card.failEffect.damage && (
-                        <span className="text-[10px] font-bold text-rose-300">Still Deal {card.failEffect.damage} Damage</span>
-                      )}
-                      {card.failEffect.takeDamage && (
-                        <span className="text-[10px] font-bold text-rose-400 underline decoration-rose-500/50">Lose {card.failEffect.takeDamage} HP</span>
-                      )}
-                      {card.failEffect.loseTurn && (
-                        <span className="text-[10px] font-bold text-rose-400">Lose Next Turn</span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-[10px] font-bold text-slate-500 italic">No effect</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-auto pt-2 text-[8px] font-black uppercase text-slate-500 text-center tracking-tighter border-t border-slate-700/50">
-             {card.rarity} CARD
-          </div>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </motion.div>
   );
 }
