@@ -47,34 +47,38 @@ export function Enemy({ enemy }: EnemyProps) {
   // Context-Aware Action Animations
   useEffect(() => {
     // Only animate if it's the enemy's turn AND the banner has finished
-    if (phase === "ENEMY_TURN" && !bannerText) {
-      if (enemy.intent === "ATTACK") {
+    if (phase === "ENEMY_TURN" && !bannerText && enemy.animationState && enemy.animationState !== "idle") {
+      if (enemy.animationState === "light") {
         controls.start({
-          y: [0, 80, 0],
-          scale: [1, 1.15, 1],
-          transition: { duration: 0.4, ease: "backIn" },
+          x: [0, -10, 10, -10, 10, 0],
+          transition: { duration: 0.3 },
         });
-      } else if (enemy.intent === "BLOCK") {
+      } else if (enemy.animationState === "heavy") {
+        controls.start({
+          y: [0, -20, 80, 0],
+          scale: [1, 1.1, 1.2, 1],
+          transition: { duration: 0.6, ease: "backIn" },
+        });
+      } else if (enemy.animationState === "combo") {
+        controls.start({
+          x: [0, -15, 15, -15, 15, 0],
+          transition: { duration: 0.5 },
+        });
+      } else if (enemy.animationState === "defend") {
         controls.start({
           scale: [1, 1.2, 1],
           rotate: [0, 5, -5, 0],
           transition: { duration: 0.5 },
         });
-      } else if (enemy.intent === "DEBUFF") {
-        controls.start({
-          x: [0, -5, 5, -5, 5, 0],
-          filter: ["hue-rotate(0deg)", "hue-rotate(90deg)", "hue-rotate(0deg)"],
-          transition: { duration: 0.6, repeat: 1 },
-        });
-      } else if (enemy.intent === "SPECIAL" || enemy.intent === "RANDOM") {
+      } else if (enemy.animationState === "cast") {
         controls.start({
           y: [0, -30, 0],
-          rotate: [0, 360],
+          filter: ["hue-rotate(0deg)", "hue-rotate(180deg)", "hue-rotate(0deg)"],
           transition: { duration: 0.8 },
         });
       }
     }
-  }, [phase, bannerText, enemy.intent, controls]);
+  }, [phase, bannerText, enemy.animationState, controls]);
 
   return (
     <div className="flex flex-col items-center gap-6 relative">
@@ -160,13 +164,18 @@ export function Enemy({ enemy }: EnemyProps) {
               {enemy.intent === "ATTACK" && (
                 <>
                   <Skull size={14} className="fill-white" />
-                  <span>{enemy.attack} DMG</span>
+                  <span>
+                    {enemy.attack}
+                    {enemy.moves[enemy.nextMoveIndex]?.hits && enemy.moves[enemy.nextMoveIndex].hits! > 1 
+                      ? `x${enemy.moves[enemy.nextMoveIndex].hits}` 
+                      : ''} DMG
+                  </span>
                 </>
               )}
               {enemy.intent === "BLOCK" && (
                 <>
                   <Shield size={14} className="fill-white" />
-                  <span>{enemy.moves[enemy.nextMoveIndex].value} DEF</span>
+                  <span>{enemy.moves[enemy.nextMoveIndex]?.value || 0} DEF</span>
                 </>
               )}
               {enemy.intent === "DEBUFF" && (
@@ -175,19 +184,25 @@ export function Enemy({ enemy }: EnemyProps) {
                   <span>DEBUFF</span>
                 </>
               )}
+              {enemy.intent === "BUFF" && (
+                <>
+                  <Sparkles size={14} className="fill-white" />
+                  <span>BUFF</span>
+                </>
+              )}
               {enemy.intent === "SPECIAL" && (
                 <>
                   <Sparkles size={14} className="fill-white" />
                   <span>SPECIAL</span>
                 </>
               )}
-              {enemy.intent === "RANDOM" && (
-                <>
-                  <Dice5 size={14} className="fill-white" />
-                  <span>???</span>
-                </>
-              )}
             </div>
+            {/* Show secondary intent if exists */}
+            {enemy.moves[enemy.nextMoveIndex]?.secondaryIntent && (
+               <div className="flex items-center gap-1 mt-1 text-[9px] font-black text-white/80 italic tracking-tighter uppercase">
+                  <span>+ {enemy.moves[enemy.nextMoveIndex].secondaryIntent}</span>
+               </div>
+            )}
           </div>
         </motion.div>
 

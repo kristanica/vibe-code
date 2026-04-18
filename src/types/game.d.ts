@@ -49,14 +49,24 @@ type GameCard = {
   successEffect: GameEffect;
   failEffect?: GameEffect;
   description: string;
-  rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VOLATILE';
+  rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VOLATILE' | 'EXCLUSIVE';
   isVolatile?: boolean;
 };
 
+type EnemyIntent = 'ATTACK' | 'BLOCK' | 'DEBUFF' | 'SPECIAL' | 'BUFF' | 'HEAL';
+
 type EnemyMove = {
-  intent: 'ATTACK' | 'BLOCK' | 'DEBUFF' | 'SPECIAL';
+  id?: string;
+  intent: EnemyIntent;
   value: number;
   description?: string;
+  hits?: number; // Multi-hit combo
+  secondaryIntent?: EnemyIntent;
+  secondaryValue?: number;
+  weight?: number; // For ADAPTIVE AI
+  cooldown?: number; // Turns before it can be used again
+  animationType?: 'light' | 'heavy' | 'combo' | 'cast' | 'defend';
+  requiredHpPercentage?: number; // Only use if HP < this %
 };
 
 type Enemy = {
@@ -68,11 +78,14 @@ type Enemy = {
   block: number;
   moves: EnemyMove[];
   nextMoveIndex: number;
-  intent: 'ATTACK' | 'BLOCK' | 'DEBUFF' | 'SPECIAL' | 'RANDOM';
+  intent: EnemyIntent;
+  aiType: 'SEQUENTIAL' | 'RANDOM' | 'ADAPTIVE';
   attack?: number; 
   passiveDescription?: string;
   debuffOdds?: number;
   statusEffects: StatusEffect[];
+  currentMoveCooldowns?: Record<number, number>; // index -> remaining cooldown
+  animationState?: 'idle' | 'light' | 'heavy' | 'combo' | 'cast' | 'defend' | 'hurt' | 'dead';
 };
 
 type RelicEffect = {
@@ -110,6 +123,8 @@ type PlayerState = {
   oddsModifiers: ProbabilityModifier[];
   statusEffects: StatusEffect[];
   relics: Relic[];
+  playsRemaining: number;
+  maxPlays: number;
   discardsRemaining: number;
   shufflesRemaining: number;
   level: number;
@@ -162,6 +177,9 @@ type GameState = {
   starterPicksRemaining: number;
   mapNodes: MapNode[];
   isGodMode: boolean;
+  removalPrice: number;
+  upgradePrice: number;
+  shopSelectionMode: 'NONE' | 'REMOVE' | 'UPGRADE';
 };
 
 interface GameActions {
@@ -189,4 +207,7 @@ interface GameActions {
   upgradeStat: (stat: keyof PlayerStats) => void;
   setBanner: (text: string) => void;
   clearBanner: () => void;
+  removeCard: (instanceId: string) => void;
+  upgradeCard: (instanceId: string) => void;
+  setShopSelectionMode: (mode: 'NONE' | 'REMOVE' | 'UPGRADE') => void;
 }

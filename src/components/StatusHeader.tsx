@@ -1,4 +1,4 @@
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import { Heart, Zap, Shield } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
@@ -15,11 +15,13 @@ function cn(...inputs: ClassValue[]) {
 export function StatusHeader() {
   const { player, floor, act, isGodMode, toggleGodMode } = useGameStore();
   const playerControls = useAnimation();
+  const [damageNumbers, setDamageNumbers] = useState<{ id: number; value: number }[]>([]);
   const prevHp = useRef(player.hp);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   useEffect(() => {
     if (player.hp < prevHp.current && !isGodMode) {
+      const damage = prevHp.current - player.hp;
       playerControls.start({
         x: [0, -10, 10, -10, 10, 0],
         backgroundColor: [
@@ -29,15 +31,36 @@ export function StatusHeader() {
         ],
         transition: { duration: 0.4 },
       });
+
+      const id = Date.now();
+      setDamageNumbers((prev) => [...prev, { id, value: damage }]);
+      setTimeout(() => {
+        setDamageNumbers((prev) => prev.filter((num) => num.id !== id));
+      }, 1000);
     }
     prevHp.current = player.hp;
   }, [player.hp, playerControls, isGodMode]);
 
   return (
-    <header className="flex flex-col mb-4">
+    <header className="flex flex-col mb-4 relative">
       <StatsModal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} />
       
-      {/* Top Bar: Primary Stats */}
+      {/* Floating Damage Numbers for Player */}
+      <div className="absolute left-20 top-20 pointer-events-none z-[100]">
+        <AnimatePresence>
+          {damageNumbers.map((num) => (
+            <motion.div
+              key={num.id}
+              initial={{ opacity: 0, y: 0, scale: 0.5 }}
+              animate={{ opacity: 1, y: 50, scale: 1.5 }}
+              exit={{ opacity: 0 }}
+              className="text-red-500 font-black text-4xl italic tracking-tighter drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+            >
+              -{num.value}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
       <div className="flex justify-between items-center w-full mb-3">
         <div className="flex items-center gap-4">
           {/* Player Core Box */}
@@ -64,6 +87,17 @@ export function StatusHeader() {
                   <Zap className="text-yellow-400 fill-yellow-400" size={14} />
                   <span className="font-black text-xl italic tracking-tighter">
                     {player.energy}<span className="text-slate-500 text-xs not-italic font-bold">/{player.maxEnergy}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-px h-8 bg-slate-800" />
+
+              <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black uppercase text-emerald-400 mb-0.5">Plays</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-xl italic tracking-tighter text-emerald-400">
+                    {player.playsRemaining}<span className="text-slate-500 text-xs not-italic font-bold">/{player.maxPlays}</span>
                   </span>
                 </div>
               </div>
