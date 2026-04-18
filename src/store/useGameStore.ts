@@ -305,7 +305,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       
       // Manual handling for the specific events we added
       // (Normally we'd want a more robust way to let actions modify state, but this works for now)
-      const nextChips = option.cost ? player.chips - option.cost : player.chips;
+      let nextChips = option.cost ? player.chips - option.cost : player.chips;
       const nextDeck = [...player.deck];
       const nextRelics = [...player.relics];
       const nextStats = { ...player.stats };
