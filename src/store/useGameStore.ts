@@ -617,6 +617,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             if (e.type === 'ARMOR') turnArmor += e.value;
           });
 
+          const nextEnemy: Enemy | null = state.enemy ? { 
+            ...state.enemy, 
+            ...nextMoveData, 
+            block: nextEnemyBlock, 
+            statusEffects: tickedEnemyStatus,
+            attack: nextMoveData.attack ?? 0
+          } : null;
+
           setTimeout(() => {
             const drawCount = Math.max(0, 5 - get().player.hand.length);
             set({ 
@@ -629,7 +637,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
                 energy: state.player.maxEnergy + energyBonus, 
                 statusEffects: tickedPlayerStatus 
               }, 
-              enemy: { ...state.enemy, ...nextMoveData, block: nextEnemyBlock, statusEffects: tickedEnemyStatus } 
+              enemy: nextEnemy
             });
             if (drawCount > 0) get().drawCards(drawCount);
             if (turnHeal > 0) get().addLog(`Regeneration healed you for ${turnHeal} HP.`);

@@ -1,5 +1,5 @@
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import { Skull, AlertTriangle, Dice5, Shield, Sparkles } from "lucide-react";
+import { Skull, AlertTriangle, Dice5, Shield, Sparkles, Swords } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { StatusAuras } from "./StatusAuras";
