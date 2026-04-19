@@ -22,6 +22,7 @@ import { twMerge } from "tailwind-merge";
 import { calculateProbabilityBreakdown } from "../utils/gameEngine";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { ProbabilityMatrixWidget } from "../components/ProbabilityMatrixWidget";
+import { BannerOverlay } from "../components/BannerOverlay";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -78,6 +79,7 @@ export function Game() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden p-4 lg:p-6 bg-slate-950 relative">
+      <BannerOverlay />
       {isTutorialOpen && <TutorialOverlay />}
       <ResolutionVisual />
       
@@ -265,9 +267,16 @@ export function Game() {
             <button
               onClick={endTurn}
               disabled={phase !== "PLAYER_TURN"}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-black uppercase tracking-tighter italic transition-all active:scale-95 shadow-lg shadow-indigo-500/10"
+              className={cn(
+                "px-8 py-3 rounded-xl font-black uppercase tracking-tighter italic transition-all active:scale-95 shadow-lg",
+                phase !== "PLAYER_TURN" 
+                  ? "bg-slate-800 opacity-50 cursor-not-allowed" 
+                  : (player.energy === 0 || player.playsRemaining === 0)
+                    ? "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/40 animate-pulse border-2 border-indigo-400"
+                    : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/10"
+              )}
             >
-              End Turn
+              {player.energy === 0 || player.playsRemaining === 0 ? "Turn Over?" : "End Turn"}
             </button>
           </div>
         </div>

@@ -298,7 +298,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   setBanner: (text: string) => {
     set({ bannerText: text });
-    setTimeout(() => set({ bannerText: null }), 1500);
+    setTimeout(() => set({ bannerText: null }), 1000);
   },
   clearBanner: () => set({ bannerText: null }),
 
@@ -422,7 +422,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
     });
     if (get().phase === "PLAYER_TURN")
-      setTimeout(() => set({ bannerText: null }), 1500);
+      setTimeout(() => set({ bannerText: null }), 1000);
   },
 
   discardSelected: () => {
@@ -687,7 +687,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
       return {};
     });
-    setTimeout(() => set({ bannerText: null }), 1500);
+    setTimeout(() => set({ bannerText: null }), 1000);
   },
 
   buyCard: (card: GameCard) => {
@@ -755,7 +755,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         };
       }
     });
-    setTimeout(() => set({ bannerText: null }), 1500);
+    setTimeout(() => set({ bannerText: null }), 1000);
   },
 
   resolveEventOption: (option: EventOption) => {
@@ -1037,7 +1037,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         };
       }
     });
-    setTimeout(() => set({ bannerText: null }), 1500);
+    setTimeout(() => set({ bannerText: null }), 1000);
   },
 
   drawCards: (count: number) => {
@@ -1166,6 +1166,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
 
       const nextLog = [...logs, ...state.log];
+      
+      // TRIGGER BANNERS FOR DEPLETED RESOURCES
+      let nextBanner: string | null = state.bannerText;
+      if (!isGodMode) {
+        if (nextEnergy === 0 && player.energy > 0) {
+           nextBanner = "ENERGY DEPLETED";
+           setTimeout(() => set({ bannerText: null }), 1000);
+        } else if (nextPlays === 0 && player.playsRemaining > 0) {
+           nextBanner = "OUT OF PLAYS";
+           setTimeout(() => set({ bannerText: null }), 1000);
+        }
+      }
 
       if (nextEnemy && nextEnemy.hp <= 0) {
         let scoreAward = 100;
@@ -1258,6 +1270,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
       return {
         phase: "PLAYER_TURN" as GamePhase,
+        bannerText: nextBanner,
         resolvingCard: null,
         rollValue: null,
         player: {
@@ -1343,7 +1356,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         };
       }
     });
-    setTimeout(() => set({ bannerText: null }), 1500);
+    setTimeout(() => set({ bannerText: null }), 1000);
   },
 
   upgradeStat: (stat: keyof PlayerStats) => {
@@ -1542,7 +1555,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     if (turnHeal > 0) get().addLog(`Regeneration healed you for ${turnHeal} HP.`);
     if (turnArmor > 0) get().addLog(`Armor provided ${turnArmor} Block.`);
 
-    setTimeout(() => set({ bannerText: null }), 1500);
+    setTimeout(() => set({ bannerText: null }), 1000);
   },
 
   draftCard: (card: GameCard) => {
@@ -1614,6 +1627,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       };
     });
     if (get().phase === "PLAYER_TURN")
-      setTimeout(() => set({ bannerText: null }), 1500);
+      setTimeout(() => set({ bannerText: null }), 1000);
   },
 }));

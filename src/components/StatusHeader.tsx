@@ -155,12 +155,21 @@ export function StatusHeader() {
               <div className="w-px h-8 bg-slate-800" />
 
               <div className="flex flex-col items-center">
-                <span className="text-[8px] font-black uppercase text-yellow-500 mb-0.5">
-                  Energy
+                <span className={cn(
+                  "text-[8px] font-black uppercase mb-0.5 transition-colors",
+                  player.energy === 0 ? "text-red-500 animate-pulse" : "text-yellow-500"
+                )}>
+                  {player.energy === 0 ? "Depleted" : "Energy"}
                 </span>
                 <motion.div animate={energyControls} className="flex items-center gap-1.5">
-                  <Zap className="text-yellow-400 fill-yellow-400" size={14} />
-                  <span className="font-black text-xl italic tracking-tighter text-yellow-400">
+                  <Zap className={cn(
+                    "transition-colors",
+                    player.energy === 0 ? "text-red-500 fill-red-500" : "text-yellow-400 fill-yellow-400"
+                  )} size={14} />
+                  <span className={cn(
+                    "font-black text-xl italic tracking-tighter transition-colors",
+                    player.energy === 0 ? "text-red-500" : "text-yellow-400"
+                  )}>
                     {player.energy}
                     <span className="text-slate-500 text-xs not-italic font-bold">
                       /{player.maxEnergy}
@@ -172,11 +181,17 @@ export function StatusHeader() {
               <div className="w-px h-8 bg-slate-800" />
 
               <div className="flex flex-col items-center">
-                <span className="text-[8px] font-black uppercase text-emerald-400 mb-0.5">
-                  Plays
+                <span className={cn(
+                  "text-[8px] font-black uppercase mb-0.5 transition-colors",
+                  player.playsRemaining === 0 ? "text-red-500 animate-pulse" : "text-emerald-400"
+                )}>
+                  {player.playsRemaining === 0 ? "No Plays" : "Plays"}
                 </span>
                 <motion.div animate={playControls} className="flex items-center gap-1.5">
-                  <span className="font-black text-xl italic tracking-tighter text-emerald-400">
+                  <span className={cn(
+                    "font-black text-xl italic tracking-tighter transition-colors",
+                    player.playsRemaining === 0 ? "text-red-500" : "text-emerald-400"
+                  )}>
                     {player.playsRemaining}
                     <span className="text-slate-500 text-xs not-italic font-bold">
                       /{player.maxPlays}
