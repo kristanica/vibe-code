@@ -217,11 +217,14 @@ type GameState = {
   upgradePrice: number;
   shopSelectionMode: "NONE" | "REMOVE" | "UPGRADE";
   score: number;
+  combo: number;
+  highestCombo: number;
 };
 
 interface GameActions {
   addScore: (amount: number) => void;
   resetScore: () => void;
+  setCombo: (amount: number) => void;
   startGame: () => void;
   drawCards: (count: number) => void;
   playCard: (card: GameCard) => void;
@@ -249,4 +252,6 @@ interface GameActions {
   removeCard: (instanceId: string) => void;
   upgradeCard: (instanceId: string) => void;
   setShopSelectionMode: (mode: "NONE" | "REMOVE" | "UPGRADE") => void;
+  buyDiscard: () => void;
+  buyShuffle: () => void;
 }

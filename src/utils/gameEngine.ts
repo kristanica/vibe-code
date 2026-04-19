@@ -82,6 +82,12 @@ export const generateMapNodes = (floor: number): MapNode[] => {
     return [{ id: 'boss', type: 'BOSS', label: 'THE PIT BOSS' }];
   }
   
+  if (floor % 10 === 9) {
+    const preBossTypes: NodeType[] = ['SHOP', 'REST', 'EVENT', 'TREASURE'];
+    const pool = shuffle(preBossTypes);
+    return pool.map((type, i) => ({ id: `pre-boss-${i}-${floor}`, type, label: type }));
+  }
+
   const types: NodeType[] = ['ELITE', 'SHOP', 'REST', 'EVENT', 'TREASURE'];
   const pool = shuffle(types);
   

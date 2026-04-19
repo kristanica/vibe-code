@@ -10,7 +10,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function ShopOverlay() {
-  const { phase, player, shopOptions, shopRelicOptions, buyCard, buyRelic, leaveShop, setFocusedCard, setShopSelectionMode, shopSelectionMode, removalPrice, upgradePrice } = useGameStore();
+  const { phase, player, shopOptions, shopRelicOptions, buyCard, buyRelic, leaveShop, setFocusedCard, setShopSelectionMode, shopSelectionMode, removalPrice, upgradePrice, buyDiscard, buyShuffle } = useGameStore();
 
   if (phase !== "SHOP") return null;
 
@@ -97,29 +97,57 @@ export function ShopOverlay() {
           </div>
 
           <div className="flex flex-col items-end gap-4">
-             <div className="flex gap-2">
-                <button
-                  onClick={() => setShopSelectionMode(shopSelectionMode === "REMOVE" ? "NONE" : "REMOVE")}
-                  className={cn(
-                    "px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all border-2",
-                    shopSelectionMode === "REMOVE" 
-                      ? "bg-red-900/50 border-red-500 text-red-200"
-                      : "bg-slate-900 border-slate-800 text-slate-400 hover:border-red-500/50 hover:text-red-200"
-                  )}
-                >
-                  Remove Card (♦{removalPrice})
-                </button>
-                <button
-                  onClick={() => setShopSelectionMode(shopSelectionMode === "UPGRADE" ? "NONE" : "UPGRADE")}
-                  className={cn(
-                    "px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all border-2",
-                    shopSelectionMode === "UPGRADE"
-                      ? "bg-blue-900/50 border-blue-500 text-blue-200"
-                      : "bg-slate-900 border-slate-800 text-slate-400 hover:border-blue-500/50 hover:text-blue-200"
-                  )}
-                >
-                  Upgrade Card (♦{upgradePrice})
-                </button>
+             <div className="flex flex-col gap-2 items-end">
+               <div className="flex gap-2">
+                  <button
+                    onClick={() => setShopSelectionMode(shopSelectionMode === "REMOVE" ? "NONE" : "REMOVE")}
+                    className={cn(
+                      "px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all border-2",
+                      shopSelectionMode === "REMOVE" 
+                        ? "bg-red-900/50 border-red-500 text-red-200"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:border-red-500/50 hover:text-red-200"
+                    )}
+                  >
+                    Remove Card (♦{removalPrice})
+                  </button>
+                  <button
+                    onClick={() => setShopSelectionMode(shopSelectionMode === "UPGRADE" ? "NONE" : "UPGRADE")}
+                    className={cn(
+                      "px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all border-2",
+                      shopSelectionMode === "UPGRADE"
+                        ? "bg-blue-900/50 border-blue-500 text-blue-200"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:border-blue-500/50 hover:text-blue-200"
+                    )}
+                  >
+                    Upgrade Card (♦{upgradePrice})
+                  </button>
+               </div>
+               <div className="flex gap-2">
+                  <button
+                    onClick={buyDiscard}
+                    disabled={player.chips < 50 || player.discardsRemaining >= 3}
+                    className={cn(
+                      "px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all border-2",
+                      player.chips >= 50 && player.discardsRemaining < 3
+                        ? "bg-slate-900 border-slate-800 text-slate-400 hover:border-green-500/50 hover:text-green-200"
+                        : "bg-slate-950 border-slate-900 text-slate-700 opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    +1 Pitch (♦50)
+                  </button>
+                  <button
+                    onClick={buyShuffle}
+                    disabled={player.chips < 50 || player.shufflesRemaining >= 3}
+                    className={cn(
+                      "px-4 py-2 rounded-lg font-black uppercase italic text-xs transition-all border-2",
+                      player.chips >= 50 && player.shufflesRemaining < 3
+                        ? "bg-slate-900 border-slate-800 text-slate-400 hover:border-purple-500/50 hover:text-purple-200"
+                        : "bg-slate-950 border-slate-900 text-slate-700 opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    +1 Mulligan (♦50)
+                  </button>
+               </div>
              </div>
              <div className="bg-slate-900 border-2 border-yellow-500/50 p-4 px-6 rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                 <span className="text-[10px] font-black uppercase text-yellow-500/70 block mb-1">Available Funds</span>

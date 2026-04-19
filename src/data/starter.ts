@@ -150,7 +150,7 @@ export const STARTER_CARDS: GameCard[] = [
     id: "fortress-mode",
     name: "Titan Form",
     type: "DEFENSE",
-    cost: 3,
+    cost: 2,
     baseOdds: 60,
     successEffect: {
       addStatus: {
@@ -289,7 +289,7 @@ export const STARTER_CARDS: GameCard[] = [
     id: "quantum-gamble",
     name: "Quantum Gamble",
     type: "GAMBLE",
-    cost: 1,
+    cost: 0,
     baseOdds: 50,
     successEffect: {
       energy: 2,

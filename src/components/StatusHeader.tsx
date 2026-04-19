@@ -13,7 +13,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function StatusHeader() {
-  const { player, floor, act, isGodMode, toggleGodMode, score } =
+  const { player, floor, act, isGodMode, toggleGodMode, score, combo } =
     useGameStore();
   const playerControls = useAnimation();
   const [damageNumbers, setDamageNumbers] = useState<
@@ -177,6 +177,25 @@ export function StatusHeader() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Combo */}
+          <AnimatePresence>
+            {combo > 1 && (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="bg-purple-900/80 border-2 border-purple-500/50 p-2 px-4 rounded-2xl flex items-center gap-3 animate-pulse"
+              >
+                <div className="text-purple-400 text-xl font-black italic tracking-tighter">
+                  x{combo}
+                </div>
+                <span className="text-[8px] font-black uppercase text-purple-400/60 tracking-[0.2em]">
+                  Combo
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Score */}
           <div className="bg-slate-900/80 border-2 border-pink-500/30 p-2 px-4 rounded-2xl flex items-center gap-3">
             <div className="text-pink-400 text-xl font-black italic tracking-tighter">

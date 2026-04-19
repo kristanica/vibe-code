@@ -20,9 +20,15 @@ import { RELICS } from "../data/relics";
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
   phase: "INITIALIZING",
   score: 0,
+  combo: 0,
+  highestCombo: 0,
+  setCombo: (amount: number) => set((state) => {
+    const newHighest = Math.max(state.highestCombo, amount);
+    return { combo: amount, highestCombo: newHighest };
+  }),
   addScore: (amount: number) =>
     set((state) => ({ score: state.score + amount })),
-  resetScore: () => set({ score: 0 }),
+  resetScore: () => set({ score: 0, combo: 0, highestCombo: 0 }),
   player: {
     hp: 20,
     maxHp: 20,
@@ -148,6 +154,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           hand: state.player.hand.map(upgradeOne),
           discard: state.player.discard.map(upgradeOne),
         },
+        upgradePrice: state.upgradePrice + 50,
         shopSelectionMode: "NONE",
         log: [`Upgraded card!`, ...state.log],
       };
@@ -156,6 +163,34 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   setShopSelectionMode: (mode: "NONE" | "REMOVE" | "UPGRADE") =>
     set({ shopSelectionMode: mode }),
+
+  buyDiscard: () =>
+    set((state) => {
+      if (state.player.chips < 50 || state.player.discardsRemaining >= 3)
+        return state;
+      return {
+        player: {
+          ...state.player,
+          chips: state.player.chips - 50,
+          discardsRemaining: state.player.discardsRemaining + 1,
+        },
+        log: ["Purchased +1 Discard (Pitch).", ...state.log],
+      };
+    }),
+
+  buyShuffle: () =>
+    set((state) => {
+      if (state.player.chips < 50 || state.player.shufflesRemaining >= 3)
+        return state;
+      return {
+        player: {
+          ...state.player,
+          chips: state.player.chips - 50,
+          shufflesRemaining: state.player.shufflesRemaining + 1,
+        },
+        log: ["Purchased +1 Shuffle (Mulligan).", ...state.log],
+      };
+    }),
 
   clearSelection: () => set({ selectedCards: [] }),
   setFocusedCard: (card: GameCard | null) => set({ focusedCard: card }),
@@ -352,31 +387,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
       const selectedIds = new Set(selectedCards.map((c) => c.instanceId));
       const newHand = player.hand.filter((c) => !selectedIds.has(c.instanceId));
-      const nextDeck = [...player.deck];
-
-      const drawn: GameCard[] = [];
-      for (let i = 0; i < selectedCards.length; i++) {
-        if (nextDeck.length === 0) {
-          return {
-            phase: "BATTLE_END",
-            player: { ...state.player, hp: 0, block: 0 },
-            log: ["DECK EXHAUSTED DURING DISCARD - GAME OVER", ...state.log],
-          };
-        }
-        const card = nextDeck.shift();
-        if (card) drawn.push(card);
-      }
-
+      const energyGained = selectedCards.length;
       return {
         selectedCards: [],
         player: {
           ...player,
-          hand: [...newHand, ...drawn],
-          deck: nextDeck,
+          energy: Math.min(player.maxEnergy, player.energy + energyGained),
+          hand: newHand,
           discard: [...player.discard, ...selectedCards],
           discardsRemaining: player.discardsRemaining - 1,
         },
-        log: [`Discarded ${selectedCards.length} cards.`, ...log],
+        log: [
+          `Discarded ${selectedCards.length} cards and recovered ${energyGained} Energy.`,
+          ...log,
+        ],
       };
     });
   },
@@ -452,8 +476,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             block: initialBlock,
             statusEffects: [],
             playsRemaining: 3,
-            discardsRemaining: 3,
-            shufflesRemaining: 3,
           },
         };
       } else if (node.type === "TREASURE") {
@@ -489,9 +511,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               hand: [],
               discard: [],
               tempDiscard: [],
+              discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
+              shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
             },
             log: [
-              `Rested and recovered ${heal} HP. Milestone ahead!`,
+              `Rested and recovered ${heal} HP, +1 Discard/Shuffle. Milestone ahead!`,
               ...state.log,
             ],
             floor: nextFloor,
@@ -513,11 +537,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               block: 0,
               statusEffects: [],
               playsRemaining: 3,
-              discardsRemaining: 3,
-              shufflesRemaining: 3,
+              energy: Math.min(state.player.maxEnergy, state.player.energy + 5),
+              discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
+              shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
             },
             log: [
-              `Rested and recovered ${heal} HP. Heading to Battle!`,
+              `Rested: +${heal} HP, +5 Energy, +1 Pitch/Mulligan. Heading to Battle!`,
               ...state.log,
             ],
             floor: nextFloor,
@@ -649,8 +674,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             block: 0,
             statusEffects: [],
             playsRemaining: 3,
-            discardsRemaining: 3,
-            shufflesRemaining: 3,
           },
         };
       }
@@ -939,8 +962,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             block: 0,
             statusEffects: [],
             playsRemaining: 3,
-            discardsRemaining: 3,
-            shufflesRemaining: 3,
           },
           log: capturedLog,
         };
@@ -1001,10 +1022,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set({ lastResult: isSuccess ? "SUCCESS" : "FAILURE", selectedCards: [] });
     setTimeout(() => set({ lastResult: null }), 800);
 
-    // Award points for playing a card (success = 10, fail = 2)
+    // Award points for playing a card and handle combos
     if (isSuccess) {
-      get().addScore(10);
+      const newCombo = s.combo + 1;
+      get().setCombo(newCombo);
+      const comboBonus = newCombo > 1 ? newCombo * 5 : 0;
+      get().addScore(10 + comboBonus);
+      if (comboBonus > 0) {
+        s.addLog(`COMBO x${newCombo}! (+${comboBonus} Bonus Score)`);
+      }
     } else {
+      if (s.combo > 2) s.addLog(`Combo Broken!`);
+      get().setCombo(0);
       get().addScore(2);
     }
 
@@ -1217,8 +1246,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             block: 0,
             statusEffects: [],
             playsRemaining: 3,
-            discardsRemaining: 3,
-            shufflesRemaining: 3,
           },
           log: [
             `Found treasure: ${relic.name}! Heading to Battle.`,
@@ -1257,8 +1284,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           stats: newStats,
           maxHp,
           hp,
+          discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
+          shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
         },
-        log: [`Leveled up to ${level}! Upgraded ${stat}.`, ...state.log],
+        log: [`Leveled up to ${level}! Upgraded ${stat}. (+1 Discard/Shuffle)`, ...state.log],
       };
     });
   },
@@ -1384,7 +1413,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         hp: Math.min(nextPlayer.maxHp, nextPlayer.hp + turnHeal),
         block: nextPlayer.block + turnArmor,
         energy: Math.min(nextPlayer.maxEnergy, nextPlayer.energy + energyBonus),
-        playsRemaining: nextPlayer.maxPlays,
+        playsRemaining: nextPlayer.playsRemaining + nextPlayer.maxPlays,
         statusEffects: tickedPlayerStatus,
       },
       enemy: finalEnemy,
@@ -1420,7 +1449,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         { ...card, instanceId: crypto.randomUUID() },
       ];
 
-      if (nextFloor % 5 === 0 && nextFloor !== 0) {
+      if ((nextFloor % 5 === 0 || nextFloor % 10 === 9) && nextFloor !== 0) {
         return {
           phase: "MAP",
           floor: nextFloor,
