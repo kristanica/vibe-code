@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { Swords, Shield, Sparkles, Box, LayoutGrid } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { GameCard } from "../types/game";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -138,7 +139,7 @@ export function DeckViewModal({ isOpen, onClose }: DeckViewModalProps) {
                   className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-12 justify-items-center"
                 >
                   {/* Render based on Tab */}
-                  {activeTab === 'HAND' && player.hand.map((card) => (
+                  {activeTab === 'HAND' && player.hand.map((card: GameCard) => (
                     <div key={card.instanceId} className="scale-95 hover:scale-105 transition-transform duration-300">
                       <CardUI 
                         card={card} 

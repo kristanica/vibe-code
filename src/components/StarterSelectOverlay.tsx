@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Card as CardUI } from "./Card";
 import { useGameStore } from "../store/useGameStore";
+import type { GameCard, Relic } from "../types/game";
 
 export function StarterSelectOverlay() {
   const { 
@@ -15,7 +16,7 @@ export function StarterSelectOverlay() {
 
   if (phase !== "STARTER_SELECT") return null;
 
-  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
+  const relicBonus = player.relics.reduce((acc: number, r: Relic) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[150] flex flex-col items-center justify-center p-8">
@@ -46,7 +47,7 @@ export function StarterSelectOverlay() {
 
         <div className="flex flex-wrap justify-center gap-8 px-4">
           <AnimatePresence mode="popLayout">
-            {draftOptions.map((card) => (
+            {draftOptions.map((card: GameCard) => (
               <motion.div
                 key={card.instanceId}
                 layout

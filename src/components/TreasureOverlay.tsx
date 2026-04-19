@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Gift } from "lucide-react";
 import { useGameStore } from "../store/useGameStore";
+import type { Relic } from "../types/game";
 
 export function TreasureOverlay() {
   const { phase, treasureOptions, pickTreasure } = useGameStore();
@@ -26,7 +27,7 @@ export function TreasureOverlay() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          {treasureOptions.map((relic) => (
+          {treasureOptions.map((relic: Relic) => (
             <button
               key={relic.id}
               onClick={() => pickTreasure(relic)}

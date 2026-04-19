@@ -1,11 +1,11 @@
-type CardType = "ATTACK" | "DEFENSE" | "GAMBLE" | "MODIFIER" | "SYNERGY";
+export type CardType = "ATTACK" | "DEFENSE" | "GAMBLE" | "MODIFIER" | "SYNERGY";
 
-type ProbabilityModifier = {
+export type ProbabilityModifier = {
   source: string;
   value: number;
 };
 
-type StatusEffectType =
+export type StatusEffectType =
   | "DODGE"
   | "STRENGTH"
   | "REGEN"
@@ -16,7 +16,7 @@ type StatusEffectType =
   | "DOUBLE_DOWN"
   | "ARMOR";
 
-type StatusEffect = {
+export type StatusEffect = {
   type: StatusEffectType;
   value: number;
   duration: number; // turns or actions remaining
@@ -24,7 +24,7 @@ type StatusEffect = {
   name: string;
 };
 
-type GameEffect = {
+export type GameEffect = {
   damage?: number;
   block?: number;
   drawCards?: number;
@@ -47,7 +47,7 @@ type GameEffect = {
   };
 };
 
-type GameCard = {
+export type GameCard = {
   id: string;
   instanceId?: string;
   name: string;
@@ -62,9 +62,9 @@ type GameCard = {
   isVolatile?: boolean;
 };
 
-type EnemyIntent = "ATTACK" | "BLOCK" | "DEBUFF" | "SPECIAL" | "BUFF" | "HEAL";
+export type EnemyIntent = "ATTACK" | "BLOCK" | "DEBUFF" | "SPECIAL" | "BUFF" | "HEAL";
 
-type EnemyMove = {
+export type EnemyMove = {
   id?: string;
   intent: EnemyIntent;
   value: number;
@@ -78,7 +78,7 @@ type EnemyMove = {
   requiredHpPercentage?: number;
 };
 
-type Enemy = {
+export type Enemy = {
   id: string;
   name: string;
   type: "NORMAL" | "ELITE" | "BOSS";
@@ -108,7 +108,7 @@ type Enemy = {
     | "dead";
 };
 
-type RelicEffect = {
+export type RelicEffect = {
   type:
     | "START_BATTLE_BLOCK"
     | "START_TURN_ENERGY"
@@ -123,7 +123,7 @@ type RelicEffect = {
   value: number;
 };
 
-type Relic = {
+export type Relic = {
   id: string;
   name: string;
   description: string;
@@ -133,7 +133,7 @@ type Relic = {
   price?: number;
 };
 
-type PlayerStats = {
+export type PlayerStats = {
   attackBonus: number;
   maxHpBonus: number;
   successRateBonus: number;
@@ -143,7 +143,7 @@ type PlayerStats = {
   volatility: number;
 };
 
-type PlayerState = {
+export type PlayerState = {
   hp: number;
   maxHp: number;
   energy: number;
@@ -169,18 +169,18 @@ type PlayerState = {
   entropy: number;
 };
 
-type ProbabilityLayer = {
+export type ProbabilityLayer = {
   name: string;
   value: number;
 };
 
-type ProbabilityBreakdown = {
+export type ProbabilityBreakdown = {
   baseOdds: number;
   layers: ProbabilityLayer[];
   finalOdds: number;
 };
 
-type NodeType =
+export type NodeType =
   | "BATTLE"
   | "ELITE"
   | "SHOP"
@@ -189,28 +189,28 @@ type NodeType =
   | "BOSS"
   | "TREASURE";
 
-type MapNode = {
+export type MapNode = {
   id: string;
   type: NodeType;
   label: string;
   enemyId?: string;
 };
 
-type EventOption = {
+export type EventOption = {
   label: string;
   description: string;
   action: (state: GameState & GameActions) => void;
   cost?: number;
 };
 
-type GameEvent = {
+export type GameEvent = {
   id: string;
   title: string;
   description: string;
   options: EventOption[];
 };
 
-type GamePhase =
+export type GamePhase =
   | "INITIALIZING"
   | "BATTLE_START"
   | "PLAYER_TURN"
@@ -219,13 +219,14 @@ type GamePhase =
   | "BATTLE_END"
   | "DRAFT"
   | "SHOP"
+  | "MAP"
   | "STARTER_SELECT"
   | "EVENT"
   | "LEVEL_UP"
   | "TREASURE"
   | "ACT_CLEAR";
 
-type GameState = {
+export type GameState = {
   phase: GamePhase;
   player: PlayerState;
   enemy: Enemy | null;
@@ -256,7 +257,7 @@ type GameState = {
   rollValue: number | null;
 };
 
-interface GameActions {
+export interface GameActions {
   addScore: (amount: number) => void;
   resetScore: () => void;
   setCombo: (amount: number) => void;
@@ -285,6 +286,8 @@ interface GameActions {
   upgradeStat: (stat: keyof PlayerStats) => void;
   setBanner: (text: string) => void;
   clearBanner: () => void;
+  startGame: () => void;
+  drawCards: (count: number) => void;
   removeCard: (instanceId: string) => void;
   upgradeCard: (instanceId: string) => void;
   setShopSelectionMode: (mode: "NONE" | "REMOVE" | "UPGRADE") => void;
@@ -292,3 +295,4 @@ interface GameActions {
   buyShuffle: () => void;
   finishCardResolution: () => void;
 }
+

@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight, Wallet } from "lucide-react";
 import { useGameStore } from "../store/useGameStore";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { EventOption } from "../types/game";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -45,7 +46,7 @@ export function EventOverlay() {
           </p>
 
           <div className="w-full space-y-4">
-            {currentEvent.options.map((option, i) => {
+            {currentEvent.options.map((option: EventOption, i: number) => {
               const canAfford = !option.cost || player.chips >= option.cost;
               
               return (

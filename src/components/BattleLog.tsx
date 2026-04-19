@@ -1,10 +1,4 @@
 import { ScrollText } from "lucide-react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 interface BattleLogProps {
   log: string[];
@@ -34,7 +28,7 @@ export function BattleLog({ log }: BattleLogProps) {
         </h3>
         <div className="space-y-2 h-64 overflow-y-auto custom-scrollbar text-xs text-slate-400 font-medium pr-2">
           {log.map((m, i) => (
-            <p key={i} className={cn("transition-colors duration-300 leading-relaxed", i === 0 ? "text-indigo-300" : "opacity-60 hover:opacity-100")}>
+            <p key={i} className={`transition-colors duration-300 leading-relaxed ${i === 0 ? "text-indigo-300" : "opacity-60 hover:opacity-100"}`}>
               {renderLogMessage(m)}
             </p>
           ))}

@@ -3,6 +3,7 @@ import { Swords, Heart, Sparkles, Zap, Battery, Dice5, TrendingUp } from "lucide
 import { useGameStore } from "../store/useGameStore";
 import { useMemo } from "react";
 import { shuffle } from "../utils/gameEngine";
+import type { PlayerStats } from "../types/game";
 
 export function LevelUpOverlay() {
   const { phase, player, upgradeStat } = useGameStore();
@@ -86,10 +87,10 @@ export function LevelUpOverlay() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          {selectedOptions.map((opt) => (
+          {selectedOptions.map((opt: typeof allOptions[number]) => (
             <button
               key={opt.id}
-              onClick={() => upgradeStat(opt.id)}
+              onClick={() => upgradeStat(opt.id as keyof PlayerStats)}
               className={`flex flex-col items-center p-8 rounded-3xl border-2 transition-all group ${opt.color}`}
             >
               <div className="mb-6 transform group-hover:scale-110 transition-transform">

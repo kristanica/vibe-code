@@ -1,3 +1,5 @@
+import type { GameCard, Enemy } from "../types/game";
+
 export const CARD_VERSION = 4;
 
 export const STARTER_CARDS: GameCard[] = [

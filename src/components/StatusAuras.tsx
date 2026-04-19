@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { StatusEffect, StatusEffectType } from "../types/game";
 import { 
   Shield, 
   Swords, 

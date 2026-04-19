@@ -1,4 +1,14 @@
 import { ENEMIES, ELITE_ENEMIES } from "../data/starter";
+import type { 
+  Enemy, 
+  PlayerState, 
+  StatusEffect, 
+  MapNode, 
+  NodeType, 
+  GameCard, 
+  ProbabilityBreakdown, 
+  ProbabilityLayer 
+} from "../types/game";
 
 export const shuffle = <T,>(array: T[]): T[] => {
   const newArray = [...array];
@@ -98,62 +108,44 @@ export const generateMapNodes = (floor: number): MapNode[] => {
 };
 
 export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'BOSS', player?: PlayerState, act: number = 1): Enemy => {
-  // New Scaling Curve:
-  // Floor 1: 0.5x (Very weak)
-  // Floor 3: 0.8x (Approaching standard)
-  // Floor 5: 1.2x (Challenging)
-  // Floor 10: 2.5x (Endgame Boss)
-  let multiplier = floor <= 3 
-    ? 0.5 + (floor - 1) * 0.15 // 0.5, 0.65, 0.8
-    : 0.8 + (floor - 3) * 0.25; // 1.05, 1.3, 1.55... 2.55 at floor 10
+  const multiplier = 1 + (floor - 1) * 0.15;
+  const actHpMultiplier = Math.pow(1.5, act - 1);
+  const actDmgMultiplier = Math.pow(1.25, act - 1);
   
   let template;
   if (type === 'BOSS') {
-    template = ENEMIES.pit_boss;
+    const bosses = Object.values(ENEMIES).filter(e => e.type === 'BOSS');
+    template = bosses[Math.floor(Math.random() * bosses.length)];
   } else if (type === 'ELITE') {
     const elites = Object.values(ELITE_ENEMIES);
     template = elites[Math.floor(Math.random() * elites.length)];
   } else {
-    const normals = Object.values(ENEMIES).filter(e => e.id !== 'pit_boss');
+    const normals = Object.values(ENEMIES).filter(e => e.type !== 'BOSS' && e.type !== 'ELITE');
     template = normals[Math.floor(Math.random() * normals.length)];
   }
   
-  // Scale HP
-  let scaledMaxHp = Math.max(1, Math.floor(template.maxHp * multiplier));
-
-  // Dynamic Boss Scaling: Ensure boss is beatable but challenging
+  // Scale HP with Act multiplier
+  let baseHp = template.maxHp;
   if (type === 'BOSS' && player) {
-    // Estimate player's "Power Level"
-    // Base player (20hp, 0 bonus) has power 1.0
-    // Each 1 attack bonus is ~15% more damage
-    // Each 5 max hp is ~25% more survivability
     const attackFactor = 1 + (player.stats.attackBonus * 0.15);
     const healthFactor = 1 + ((player.maxHp - 20) / 20);
     const relicFactor = 1 + (player.relics.length * 0.05);
-    
     const playerPower = attackFactor * healthFactor * relicFactor;
-    
-    // We want the boss HP to be roughly proportional to player power, 
-    // but with a floor so it's not too easy if the player is weak.
-    // Base Boss HP at floor 10 was 450. Let's make it more dynamic.
-    // A "weak" player (power 1.0) will see a boss with ~250 HP.
-    // A "strong" player (power 2.0) will see a boss with ~500 HP.
-    scaledMaxHp = Math.floor(250 * playerPower);
-  }
-
-  if (type === 'ELITE' && player) {
+    baseHp = 250 * playerPower;
+  } else if (type === 'ELITE' && player) {
     const attackFactor = 1 + (player.stats.attackBonus * 0.12);
     const healthFactor = 1 + ((player.maxHp - 20) / 30);
     const relicFactor = 1 + (player.relics.length * 0.04);
     const playerPower = attackFactor * healthFactor * relicFactor;
-    
-    scaledMaxHp = Math.floor(template.maxHp * multiplier * playerPower);
+    baseHp = template.maxHp * playerPower;
   }
+
+  const scaledMaxHp = Math.max(1, Math.floor(baseHp * multiplier * actHpMultiplier));
   
-  // Scale all Move Values (Damage, Block, etc.)
+  // Scale all Move Values (Damage, Block, etc.) with Act multiplier
   const scaledMoves = template.moves.map(move => ({
     ...move,
-    value: Math.max(1, Math.floor(move.value * multiplier)) || move.value // Ensure value doesn't drop to 0 if it was > 0
+    value: Math.max(1, Math.floor(move.value * multiplier * actDmgMultiplier)) || move.value
   }));
 
   const initialMove = scaledMoves[0];
@@ -163,14 +155,16 @@ export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'B
     type,
     maxHp: scaledMaxHp,
     hp: scaledMaxHp,
-    block: Math.floor((template.block || 0) * multiplier),
+    block: Math.floor((template.block || 0) * multiplier * actHpMultiplier),
     moves: scaledMoves,
     nextMoveIndex: 0,
     intent: initialMove.intent,
     attack: initialMove.intent === 'ATTACK' ? initialMove.value : 0,
     statusEffects: [],
     currentMoveCooldowns: {},
-    animationState: 'idle'
+    animationState: 'idle',
+    // Apply progressive act debuff to player odds
+    debuffOdds: (template.debuffOdds || 0) - ((act - 1) * 5) 
   };
 };
 

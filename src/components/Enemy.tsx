@@ -3,6 +3,7 @@ import { Skull, AlertTriangle, Dice5, Shield, Sparkles, Swords, Info } from "luc
 import { useEffect, useState, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { StatusAuras } from "./StatusAuras";
+import type { Enemy } from "../types/game";
 
 interface EnemyProps {
   enemy: Enemy;
@@ -22,8 +23,6 @@ export function Enemy({ enemy }: EnemyProps) {
   const [blockNumbers, setBlockNumbers] = useState<FloatingDamage[]>([]);
   const prevHp = useRef(enemy.hp);
   const prevBlock = useRef(enemy.block);
-
-  const currentMove = enemy.moves[enemy.nextMoveIndex];
 
   // Take Damage Animation (HP)
   useEffect(() => {
@@ -203,7 +202,7 @@ export function Enemy({ enemy }: EnemyProps) {
           animate={{ scale: 1, opacity: 1 }}
           key={enemy.intent}
           onMouseEnter={() => setIsIntentHovered(true)}
-          onMouseLeave={() => setIsIntentHovered(null as any)}
+          onMouseLeave={() => setIsIntentHovered(false)}
           className="absolute -top-4 -right-4 bg-red-600 p-2 rounded-xl border-4 border-slate-950 shadow-xl z-20 cursor-help"
         >
           <div className="flex flex-col items-center min-w-[70px]">

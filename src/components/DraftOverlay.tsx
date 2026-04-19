@@ -2,13 +2,14 @@ import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { Card as CardUI } from "./Card";
 import { useGameStore } from "../store/useGameStore";
+import type { GameCard, Relic } from "../types/game";
 
 export function DraftOverlay() {
   const { phase, draftOptions, draftCard, setFocusedCard, player } = useGameStore();
 
   if (phase !== "DRAFT") return null;
 
-  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
+  const relicBonus = player.relics.reduce((acc: number, r: Relic) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8">
@@ -26,7 +27,7 @@ export function DraftOverlay() {
         </p>
 
         <div className="flex gap-6">
-          {draftOptions.map((card) => (
+          {draftOptions.map((card: GameCard) => (
             <CardUI
               key={card.instanceId}
               card={card}

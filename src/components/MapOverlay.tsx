@@ -3,6 +3,7 @@ import { Swords, Heart, Zap, Skull, Sparkles } from "lucide-react";
 import { useGameStore } from "../store/useGameStore";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { MapNode } from "../types/game";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -37,7 +38,7 @@ export function MapOverlay() {
 
         <div className="flex flex-wrap justify-center gap-12 w-full">
           <AnimatePresence mode="wait">
-            {mapNodes.map((node, i) => (
+            {mapNodes.map((node: MapNode, i: number) => (
               <motion.button
                 key={node.id}
                 initial={{ opacity: 0, scale: 0.8, x: i % 2 === 0 ? -20 : 20 }}

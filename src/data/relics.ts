@@ -1,3 +1,5 @@
+import type { Relic } from "../types/game";
+
 export const RELICS: Relic[] = [
   {
     id: 'lucky-penny',

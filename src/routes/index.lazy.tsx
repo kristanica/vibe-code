@@ -6,7 +6,6 @@ import {
   X,
   HelpCircle,
   Zap,
-  Swords,
   Shield,
   Dice5,
   Flame,
@@ -15,7 +14,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Index() {
-  const startGame = useGameStore((state) => state.startGame);
+  const { startGame } = useGameStore();
   const [showTutorial, setShowTutorial] = useState(false);
 
   return (

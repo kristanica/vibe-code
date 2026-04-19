@@ -16,9 +16,21 @@ import {
 import { sounds } from "../utils/audio";
 
 import { RELICS } from "../data/relics";
+import type { 
+  GameState, 
+  GameActions, 
+  GamePhase, 
+  GameCard, 
+  Enemy, 
+  Relic, 
+  PlayerStats, 
+  MapNode, 
+  EventOption, 
+  GameEvent,
+} from "../types/game";
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
-  phase: "INITIALIZING",
+  phase: "INITIALIZING" as GamePhase,
   score: 0,
   combo: 0,
   highestCombo: 0,
@@ -126,7 +138,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   removeCard: (instanceId: string) => {
     set((state) => {
-      if (state.player.chips < state.removalPrice) return state;
+      if (state.player.chips < state.removalPrice) return {};
       const nextDeck = state.player.deck.filter(
         (c) => c.instanceId !== instanceId,
       );
@@ -145,7 +157,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           hand: nextHand,
           discard: nextDiscard,
         },
-        shopSelectionMode: "NONE",
+        shopSelectionMode: "NONE" as const,
         log: [`Removed card from deck.`, ...state.log],
       };
     });
@@ -153,7 +165,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   upgradeCard: (instanceId: string) => {
     set((state) => {
-      if (state.player.chips < state.upgradePrice) return state;
+      if (state.player.chips < state.upgradePrice) return {};
 
       const upgradeOne = (c: GameCard): GameCard => {
         if (c.instanceId !== instanceId) return c;
@@ -175,7 +187,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           discard: state.player.discard.map(upgradeOne),
         },
         upgradePrice: state.upgradePrice + 50,
-        shopSelectionMode: "NONE",
+        shopSelectionMode: "NONE" as const,
         log: [`Upgraded card!`, ...state.log],
       };
     });
@@ -187,7 +199,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   buyDiscard: () =>
     set((state) => {
       if (state.player.chips < 50 || state.player.discardsRemaining >= 3)
-        return state;
+        return {};
       return {
         player: {
           ...state.player,
@@ -201,7 +213,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   buyShuffle: () =>
     set((state) => {
       if (state.player.chips < 50 || state.player.shufflesRemaining >= 3)
-        return state;
+        return {};
       return {
         player: {
           ...state.player,
@@ -218,7 +230,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   instaWin: () => {
     set((state) => {
-      if (!state.enemy) return state;
+      if (!state.enemy) return {};
       const isPitBoss = state.enemy.id === "pit_boss";
 
       const availableCards = getAvailableCards(STARTER_CARDS, state.player);
@@ -260,7 +272,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       const isLevelUp = exp >= nextLevelExp;
 
       return {
-        phase: isLevelUp ? "LEVEL_UP" : isPitBoss ? "ACT_CLEAR" : "DRAFT",
+        phase: (isLevelUp ? "LEVEL_UP" : isPitBoss ? "ACT_CLEAR" : "DRAFT") as GamePhase,
         enemy: null,
         selectedCards: [],
         player: {
@@ -295,7 +307,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       .slice(0, 5)
       .map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
     set({
-      phase: "STARTER_SELECT",
+      phase: "STARTER_SELECT" as GamePhase,
       isTutorialOpen: false,
       tutorialStep: 0,
       starterPicksRemaining: 3,
@@ -390,7 +402,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
         const enemy = createEnemyInstance(1, "NORMAL", state.player, 1);
         return {
-          phase: "PLAYER_TURN",
+          phase: "PLAYER_TURN" as GamePhase,
           starterPicksRemaining: 0,
           draftOptions: [],
           player: {
@@ -417,7 +429,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set((state) => {
       const { player, selectedCards, log } = state;
       if (selectedCards.length === 0 || player.discardsRemaining <= 0)
-        return state;
+        return {};
 
       const selectedIds = new Set(selectedCards.map((c) => c.instanceId));
       const newHand = player.hand.filter((c) => !selectedIds.has(c.instanceId));
@@ -442,7 +454,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   shuffleHand: () => {
     set((state) => {
       const { player, selectedCards, log } = state;
-      if (player.shufflesRemaining <= 0) return state;
+      if (player.shufflesRemaining <= 0) return {};
 
       // Cards the player wants to KEEP
       const heldCards = [...selectedCards];
@@ -512,7 +524,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         });
 
         return {
-          phase: "PLAYER_TURN",
+          phase: "PLAYER_TURN" as GamePhase,
           enemy,
           bannerText:
             node.type === "BOSS"
@@ -534,7 +546,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       } else if (node.type === "TREASURE") {
         const treasurePool = shuffle(RELICS).slice(0, 3);
         return {
-          phase: "TREASURE",
+          phase: "TREASURE" as GamePhase,
           treasureOptions: treasurePool,
           bannerText: "TREASURE ROOM",
           player: {
@@ -578,7 +590,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               ...state.log,
             ],
             floor: nextFloor,
-            phase: "MAP",
+            phase: "MAP" as GamePhase,
             mapNodes: generateMapNodes(nextFloor),
             bannerText: `FLOOR ${nextFloor}`,
           };
@@ -611,7 +623,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               ...state.log,
             ],
             floor: nextFloor,
-            phase: "PLAYER_TURN",
+            phase: "PLAYER_TURN" as GamePhase,
             enemy,
             bannerText: `FLOOR ${nextFloor}`,
           };
@@ -646,7 +658,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         const shopPool = getShopPool();
         const relicPool = shuffle(RELICS).slice(0, 2);
         return {
-          phase: "SHOP",
+          phase: "SHOP" as GamePhase,
           shopOptions: shopPool,
           shopRelicOptions: relicPool,
           bannerText: "THE SHOP",
@@ -661,7 +673,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       } else if (node.type === "EVENT") {
         const randomEvent = EVENTS[Math.floor(Math.random() * EVENTS.length)];
         return {
-          phase: "EVENT",
+          phase: "EVENT" as GamePhase,
           currentEvent: randomEvent,
           bannerText: "EVENT",
           player: {
@@ -673,7 +685,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           },
         };
       }
-      return state;
+      return {};
     });
     setTimeout(() => set({ bannerText: null }), 1500);
   },
@@ -681,7 +693,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   buyCard: (card: GameCard) => {
     set((state) => {
       const price = card.price || 0;
-      if (state.player.chips < price) return state;
+      if (state.player.chips < price) return {};
       return {
         player: {
           ...state.player,
@@ -708,7 +720,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
       if (nextFloor % 5 === 0) {
         return {
-          phase: "MAP",
+          phase: "MAP" as GamePhase,
           floor: nextFloor,
           mapNodes: generateMapNodes(nextFloor),
           shopOptions: [],
@@ -725,7 +737,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
         const finalPool = shuffle(reclaimedDeck);
         return {
-          phase: "PLAYER_TURN",
+          phase: "PLAYER_TURN" as GamePhase,
           floor: nextFloor,
           enemy,
           shopOptions: [],
@@ -759,16 +771,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       },
     };
 
-    // Execute action (this might be slightly limited since it can't easily 'set' the store)
-    // So we'll refine the EVENTS to return specific effects or we just manually handle the ones we added
+    // Execute action
     option.action(proxyState);
 
     set((state) => {
       const nextFloor = state.floor + 1;
       const { player } = state;
 
-      // Manual handling for the specific events we added
-      // (Normally we'd want a more robust way to let actions modify state, but this works for now)
       let nextChips = option.cost ? player.chips - option.cost : player.chips;
       const nextDeck = [...player.deck];
       const nextRelics = [...player.relics];
@@ -800,8 +809,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         state.currentEvent?.id === "broken-slot-machine" &&
         option.label === "Kick the Machine"
       ) {
-        // Since Math.random was already run in the action, we just need to sync the results
-        // For simplicity, we'll re-run the logic here to ensure state sync
         if (Math.random() < 0.4) {
           const rareRelics = RELICS.filter((r) => r.rarity === "RARE");
           nextRelics.push(
@@ -880,7 +887,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             .slice(0, 3)
             .map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
           return {
-            phase: "DRAFT",
+            phase: "DRAFT" as GamePhase,
             draftOptions,
             currentEvent: null,
             player: {
@@ -893,7 +900,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           };
         }
 
-        // Return updated stats if they didn't pick Exclusive Tech
         const playerWithStats = {
           ...playerObjFinal,
           stats: nextStats,
@@ -905,7 +911,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           capturedLog.unshift("LEVEL UP! Choose an upgrade.");
           sounds.playLevelUp();
           return {
-            phase: "LEVEL_UP",
+            phase: "LEVEL_UP" as GamePhase,
             floor: nextFloor,
             currentEvent: null,
             bannerText: `FLOOR ${nextFloor}`,
@@ -922,7 +928,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
         if (nextFloor % 5 === 0) {
           return {
-            phase: "MAP",
+            phase: "MAP" as GamePhase,
             floor: nextFloor,
             mapNodes: generateMapNodes(nextFloor),
             currentEvent: null,
@@ -940,7 +946,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
           const finalPool = shuffle(reclaimedDeck);
           return {
-            phase: "PLAYER_TURN",
+            phase: "PLAYER_TURN" as GamePhase,
             floor: nextFloor,
             enemy,
             currentEvent: null,
@@ -963,21 +969,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         }
       }
 
-      const isLevelUp = playerObjFinal.exp >= playerObjFinal.nextLevelExp;
-
       if (playerObjFinal.hp <= 0) {
         return {
-          phase: "BATTLE_END",
+          phase: "BATTLE_END" as GamePhase,
           player: playerObjFinal,
           log: ["Died during an event.", ...capturedLog],
         };
       }
 
+      const isLevelUp = playerObjFinal.exp >= playerObjFinal.nextLevelExp;
       if (isLevelUp) {
         capturedLog.unshift("LEVEL UP! Choose an upgrade.");
         sounds.playLevelUp();
         return {
-          phase: "LEVEL_UP",
+          phase: "LEVEL_UP" as GamePhase,
           floor: nextFloor,
           currentEvent: null,
           bannerText: `FLOOR ${nextFloor}`,
@@ -994,7 +999,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
       if (nextFloor % 5 === 0) {
         return {
-          phase: "MAP",
+          phase: "MAP" as GamePhase,
           floor: nextFloor,
           mapNodes: generateMapNodes(nextFloor),
           currentEvent: null,
@@ -1012,7 +1017,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
         const finalPool = shuffle(reclaimedDeck);
         return {
-          phase: "PLAYER_TURN",
+          phase: "PLAYER_TURN" as GamePhase,
           floor: nextFloor,
           enemy,
           currentEvent: null,
@@ -1043,7 +1048,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       for (let i = 0; i < count; i++) {
         if (nextDeck.length === 0) {
           return {
-            phase: "BATTLE_END",
+            phase: "BATTLE_END" as GamePhase,
             player: { ...state.player, hp: 0, block: 0 },
             log: ["DECK EXHAUSTED - GAME OVER", ...state.log],
           };
@@ -1068,14 +1073,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     const rollValue = Math.random() * 100;
     
-    // START RESOLUTION PHASE
     set({ 
-      phase: "RESOLUTION", 
+      phase: "RESOLUTION" as GamePhase, 
       resolvingCard: card, 
       rollValue 
     });
 
-    // Finalize after 2.5 seconds (1.5s ticker + 1s dwell time)
     setTimeout(() => {
       get().finishCardResolution();
     }, 2500);
@@ -1095,10 +1098,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     );
     const isSuccess = rollValue <= finalOdds;
 
-    // Update new probability systems
     const nextEntropy = isSuccess ? s.player.entropy + 1 : s.player.entropy;
-    
-    // Pity Jammer check
     const isPityJammed = s.enemy?.jamsPity;
     const nextFailureStreak = isSuccess 
       ? 0 
@@ -1121,9 +1121,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set({ lastResult: isSuccess ? "SUCCESS" : "FAILURE", selectedCards: [] });
     setTimeout(() => set({ lastResult: null }), 800);
 
-    // Award points for playing a card and handle combos
     if (isSuccess) {
-      // Combo Freeze check
       const isComboFrozen = s.enemy?.freezesCombo;
       const newCombo = isComboFrozen ? s.combo : s.combo + 1;
       
@@ -1163,7 +1161,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         : nextPlayer.playsRemaining - 1;
 
       let nextEnemy = nextEnemyRaw ? { ...nextEnemyRaw } : null;
-      
       if (!isSuccess && nextEnemy?.punishesFailure) {
         nextEnemy.block += 5;
       }
@@ -1194,34 +1191,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           const eliteEvent: GameEvent = {
             id: "elite-reward",
             title: "Elite Vanquished",
-            description:
-              "The enforcer lies defeated. Choose your specialized spoils:",
+            description: "The enforcer lies defeated. Choose your specialized spoils:",
             options: [
-              {
-                label: "Combat Focus",
-                description: "Gain +3 permanent Attack.",
-                action: () => {},
-              },
-              {
-                label: "Vitality Surge",
-                description: "Gain +15 permanent Max HP.",
-                action: () => {},
-              },
-              {
-                label: "Tactical Precision",
-                description: "Gain +10% permanent Success Rate.",
-                action: () => {},
-              },
-              {
-                label: "Exclusive Tech",
-                description: "Draft a powerful EXCLUSIVE card.",
-                action: () => {},
-              },
+              { label: "Combat Focus", description: "Gain +3 permanent Attack.", action: () => {} },
+              { label: "Vitality Surge", description: "Gain +15 permanent Max HP.", action: () => {} },
+              { label: "Tactical Precision", description: "Gain +10% permanent Success Rate.", action: () => {} },
+              { label: "Exclusive Tech", description: "Draft a powerful EXCLUSIVE card.", action: () => {} },
             ],
           };
 
           return {
-            phase: "EVENT",
+            phase: "EVENT" as GamePhase,
             currentEvent: eliteEvent,
             enemy: null,
             resolvingCard: null,
@@ -1244,16 +1224,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               failureStreak: 0,
             },
             combo: 0,
-            log: [
-              `Elite Victory! +${v.expGained} EXP earned.`,
-              ...v.logs,
-              ...nextLog,
-            ],
+            log: [`Elite Victory! +${v.expGained} EXP earned.`, ...v.logs, ...nextLog],
           };
         }
 
         return {
-          phase: v.isLevelUp ? "LEVEL_UP" : v.isPitBoss ? "ACT_CLEAR" : "DRAFT",
+          phase: (v.isLevelUp ? "LEVEL_UP" : v.isPitBoss ? "ACT_CLEAR" : "DRAFT") as GamePhase,
           enemy: null,
           resolvingCard: null,
           rollValue: null,
@@ -1275,17 +1251,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             failureStreak: 0,
           },
           combo: 0,
-          log: [
-            `Victory! +25 Chips & +${v.expGained} EXP earned.`,
-            ...v.logs,
-            ...nextLog,
-          ],
+          log: [`Victory! +25 Chips & +${v.expGained} EXP earned.`, ...v.logs, ...nextLog],
           draftOptions: v.draftOptions,
         };
       }
 
       return {
-        phase: "PLAYER_TURN",
+        phase: "PLAYER_TURN" as GamePhase,
         resolvingCard: null,
         rollValue: null,
         player: {
@@ -1306,16 +1278,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   buyRelic: (relic: Relic) => {
     set((state) => {
       const price = relic.price || 0;
-      if (state.player.chips < price) return state;
+      if (state.player.chips < price) return {};
       return {
         player: {
           ...state.player,
           chips: state.player.chips - price,
           relics: [...state.player.relics, relic],
         },
-        shopRelicOptions: state.shopRelicOptions.filter(
-          (r) => r.id !== relic.id,
-        ),
+        shopRelicOptions: state.shopRelicOptions.filter((r) => r.id !== relic.id),
         log: [`Purchased relic: ${relic.name}.`, ...state.log],
       };
     });
@@ -1334,11 +1304,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
       if (nextFloor % 5 === 0) {
         return {
-          phase: "MAP",
+          phase: "MAP" as GamePhase,
           floor: nextFloor,
           mapNodes: generateMapNodes(nextFloor),
           treasureOptions: [],
-          bannerText: `FLOOR ${nextFloor}`,
           player: {
             ...state.player,
             relics: newRelics,
@@ -1347,16 +1316,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             discard: [],
             tempDiscard: [],
           },
-          log: [
-            `Found treasure: ${relic.name}! Milestone reached.`,
-            ...state.log,
-          ],
+          bannerText: `FLOOR ${nextFloor}`,
+          log: [`Found treasure: ${relic.name}! Milestone reached.`, ...state.log],
         };
       } else {
         const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
         const finalPool = shuffle(reclaimedDeck);
         return {
-          phase: "PLAYER_TURN",
+          phase: "PLAYER_TURN" as GamePhase,
           floor: nextFloor,
           enemy,
           treasureOptions: [],
@@ -1372,10 +1339,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             statusEffects: [],
             playsRemaining: 3,
           },
-          log: [
-            `Found treasure: ${relic.name}! Heading to Battle.`,
-            ...state.log,
-          ],
+          log: [`Found treasure: ${relic.name}! Heading to Battle.`, ...state.log],
         };
       }
     });
@@ -1415,7 +1379,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       if (stat === "volatility") newStats.volatility += 1;
 
       return {
-        phase: "DRAFT",
+        phase: "DRAFT" as GamePhase,
         player: {
           ...state.player,
           level,
@@ -1429,16 +1393,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
           shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
         },
-        log: [
-          `Leveled up to ${level}! Upgraded ${stat}. (+1 Discard/Shuffle)`,
-          ...state.log,
-        ],
+        log: [`Leveled up to ${level}! Upgraded ${stat}. (+1 Discard/Shuffle)`, ...state.log],
       };
     });
   },
 
   endTurn: () => {
-    set({ phase: "ENEMY_TURN", bannerText: "ENEMY TURN", selectedCards: [] });
+    set({ phase: "ENEMY_TURN" as GamePhase, bannerText: "ENEMY TURN", selectedCards: [] });
     setTimeout(() => {
       set({ bannerText: null });
       get().resolveEnemyTurn();
@@ -1451,9 +1412,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const currentMove = enemy.moves[enemy.nextMoveIndex];
 
     await new Promise((r) => setTimeout(r, 400));
-    addLog(
-      `${enemy.name} prepares ${currentMove.description || currentMove.intent}...`,
-    );
+    addLog(`${enemy.name} prepares ${currentMove.description || currentMove.intent}...`);
     await new Promise((r) => setTimeout(r, 800));
 
     const state = get();
@@ -1476,7 +1435,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       if (nextPlayer.hp <= 0) {
         setTimeout(() => {
           set({
-            phase: "BATTLE_END",
+            phase: "BATTLE_END" as GamePhase,
             player: { ...nextPlayer, block: 0 },
             log: ["GAME OVER", ...get().log],
           });
@@ -1484,7 +1443,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         return;
       }
 
-      // Delay between hits/steps
       if (i < sequence.length - 1) {
         await new Promise((r) => setTimeout(r, 400));
       }
@@ -1495,45 +1453,24 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const tickedPlayerStatus = tickStatusEffects(nextPlayer.statusEffects);
     let tickedEnemyStatus = tickStatusEffects(nextEnemyAction.statusEffects);
 
-    // Passives (Still slightly manual but cleaner)
     if (nextEnemyAction.id === "pit_boss") {
-      const currentStrength =
-        nextEnemyAction.statusEffects.find((e) => e.type === "STRENGTH")
-          ?.value || 0;
-      tickedEnemyStatus = tickedEnemyStatus.filter(
-        (e) => e.type !== "STRENGTH",
-      );
-      tickedEnemyStatus.push({
-        type: "STRENGTH",
-        value: currentStrength + 2,
-        duration: 99,
-        name: "House Edge",
-      });
+      const currentStrength = nextEnemyAction.statusEffects.find((e) => e.type === "STRENGTH")?.value || 0;
+      tickedEnemyStatus = tickedEnemyStatus.filter((e) => e.type !== "STRENGTH");
+      tickedEnemyStatus.push({ type: "STRENGTH", value: currentStrength + 2, duration: 99, name: "House Edge" });
     }
     if (nextEnemyAction.id === "enforcer") {
-      const currentStrength =
-        nextEnemyAction.statusEffects.find((e) => e.type === "STRENGTH")
-          ?.value || 0;
-      tickedEnemyStatus = tickedEnemyStatus.filter(
-        (e) => e.type !== "STRENGTH",
-      );
-      tickedEnemyStatus.push({
-        type: "STRENGTH",
-        value: currentStrength + 2,
-        duration: 99,
-        name: "Intimidate",
-      });
+      const currentStrength = nextEnemyAction.statusEffects.find((e) => e.type === "STRENGTH")?.value || 0;
+      tickedEnemyStatus = tickedEnemyStatus.filter((e) => e.type !== "STRENGTH");
+      tickedEnemyStatus.push({ type: "STRENGTH", value: currentStrength + 2, duration: 99, name: "Intimidate" });
     }
 
     const nextMoveData = getNextEnemyMove(nextEnemyAction);
 
-    // Handle Relics: START_TURN_ENERGY
     let energyBonus = 0;
     nextPlayer.relics.forEach((r) => {
       if (r.effect.type === "START_TURN_ENERGY") energyBonus += r.effect.value;
     });
 
-    // Handle Status Effects: REGEN and ARMOR
     let turnHeal = 0;
     let turnArmor = 0;
     tickedPlayerStatus.forEach((e) => {
@@ -1551,7 +1488,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     const drawCount = Math.max(0, 5 - get().player.hand.length);
     set({
-      phase: "PLAYER_TURN",
+      phase: "PLAYER_TURN" as GamePhase,
       bannerText: "YOUR TURN",
       player: {
         ...nextPlayer,
@@ -1565,8 +1502,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     });
 
     if (drawCount > 0) get().drawCards(drawCount);
-    if (turnHeal > 0)
-      get().addLog(`Regeneration healed you for ${turnHeal} HP.`);
+    if (turnHeal > 0) get().addLog(`Regeneration healed you for ${turnHeal} HP.`);
     if (turnArmor > 0) get().addLog(`Armor provided ${turnArmor} Block.`);
 
     setTimeout(() => set({ bannerText: null }), 1500);
@@ -1583,20 +1519,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         nextAct = state.act + 1;
       }
 
-      const fullDeckPool = [
-        ...state.player.deck,
-        ...state.player.hand,
-        ...state.player.discard,
-        ...state.player.tempDiscard,
-      ];
-      const newFullDeck = [
-        ...fullDeckPool,
-        { ...card, instanceId: crypto.randomUUID() },
-      ];
+      const fullDeckPool = [...state.player.deck, ...state.player.hand, ...state.player.discard, ...state.player.tempDiscard];
+      const newFullDeck = [...fullDeckPool, { ...card, instanceId: crypto.randomUUID() }];
 
       if ((nextFloor % 5 === 0 || nextFloor % 10 === 9) && nextFloor !== 0) {
         return {
-          phase: "MAP",
+          phase: "MAP" as GamePhase,
           floor: nextFloor,
           act: nextAct,
           player: {
@@ -1610,10 +1538,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             energy: state.player.maxEnergy,
           },
           mapNodes: generateMapNodes(nextFloor),
-          log: [
-            `Act ${nextAct} Floor ${nextFloor} Milestone! Choose your specialty path.`,
-            ...state.log,
-          ],
+          log: [`Act ${nextAct} Floor ${nextFloor} Milestone! Choose your specialty path.`, ...state.log],
         };
       }
 
@@ -1624,22 +1549,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       const getDraftPool = () => {
         const exclusiveRoll = Math.random();
         if (exclusiveRoll < 0.05) {
-          const exclusives = availableCards.filter(
-            (c) => c.rarity === "EXCLUSIVE",
-          );
+          const exclusives = availableCards.filter((c) => c.rarity === "EXCLUSIVE");
           if (exclusives.length > 0) {
-            return shuffle(exclusives)
-              .slice(0, 5)
-              .map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
+            return shuffle(exclusives).slice(0, 5).map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
           }
         }
-        return shuffle(availableCards.filter((c) => c.rarity !== "EXCLUSIVE"))
-          .slice(0, 5)
-          .map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
+        return shuffle(availableCards.filter((c) => c.rarity !== "EXCLUSIVE")).slice(0, 5).map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
       };
 
       return {
-        phase: "PLAYER_TURN",
+        phase: "PLAYER_TURN" as GamePhase,
         floor: nextFloor,
         act: nextAct,
         player: {
@@ -1653,10 +1572,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         },
         enemy,
         bannerText: `ACT ${nextAct} FLOOR ${nextFloor}`,
-        log: [
-          `Heading to Act ${nextAct} Floor ${nextFloor}... Battle: ${enemy.name}!`,
-          ...state.log,
-        ],
+        log: [`Heading to Act ${nextAct} Floor ${nextFloor}... Battle: ${enemy.name}!`, ...state.log],
         draftOptions: getDraftPool(),
       };
     });

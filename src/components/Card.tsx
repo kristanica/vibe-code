@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Zap, Shield, Swords, Sparkles, Info } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { GameCard, ProbabilityModifier, ProbabilityBreakdown } from '../types/game';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

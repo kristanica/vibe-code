@@ -158,6 +158,13 @@ export function Game() {
         <div className="flex items-center gap-8 w-full max-w-4xl justify-between border-t border-slate-900 pt-6">
           <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
             <button
+              onClick={openTutorial}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-yellow-500 hover:text-yellow-400 transition-all flex items-center gap-2"
+            >
+              <BookOpen size={14} />
+              HOW TO PLAY
+            </button>
+            <button
               onClick={() => setIsDeckViewOpen(true)}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-indigo-400 hover:text-indigo-300 transition-all flex items-center gap-2"
             >

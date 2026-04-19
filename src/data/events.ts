@@ -1,4 +1,5 @@
 import { RELICS } from "./relics";
+import type { GameEvent, GameState, GameActions } from "../types/game";
 
 export const EVENTS: GameEvent[] = [
   {
@@ -10,7 +11,7 @@ export const EVENTS: GameEvent[] = [
         label: 'Pay 50 Chips', 
         description: 'Remove 1 random card from your deck.', 
         cost: 50, 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           const deck = [...state.player.deck];
           if (deck.length > 0) {
             const index = Math.floor(Math.random() * deck.length);
@@ -30,7 +31,7 @@ export const EVENTS: GameEvent[] = [
       { 
         label: 'Sign the Contract', 
         description: 'Gain +5% Permanent Success Rate, but remove 2 random cards from your deck.', 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           const deck = [...state.player.deck];
           const removed: string[] = [];
           for (let i = 0; i < 2; i++) {
@@ -53,14 +54,14 @@ export const EVENTS: GameEvent[] = [
       { 
         label: 'Donate Heavily', 
         description: 'Lose 10 HP, Gain 150 Chips.', 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           state.addLog("You feel lightheaded, but your pockets are heavy (+150 Chips).");
         }
       },
       { 
         label: 'Minor Donation', 
         description: 'Lose 4 HP, Gain 50 Chips.', 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           state.addLog("A quick prick and you're on your way (+50 Chips).");
         }
       },
@@ -75,7 +76,7 @@ export const EVENTS: GameEvent[] = [
       { 
         label: 'Kick the Machine', 
         description: '40% Jackpot (Rare Relic), 60% Alarm (Lose 6 HP).', 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           if (Math.random() < 0.4) {
              const rareRelics = RELICS.filter(r => r.rarity === 'RARE');
              const relic = rareRelics[Math.floor(Math.random() * rareRelics.length)];
@@ -96,7 +97,7 @@ export const EVENTS: GameEvent[] = [
       { 
         label: 'Embrace Potential', 
         description: 'Gain +2 Attack Bonus, but lose 5 Max HP.', 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           state.addLog("Strength flows through you, but your body feels fragile.");
         }
       },
@@ -111,7 +112,7 @@ export const EVENTS: GameEvent[] = [
       { 
         label: 'Trade a Card', 
         description: 'Remove 1 random card, Gain a random COMMON relic.', 
-        action: (state) => {
+        action: (state: GameState & GameActions) => {
           const deck = [...state.player.deck];
           if (deck.length > 0) {
             const index = Math.floor(Math.random() * deck.length);

@@ -4,6 +4,7 @@ import { Card as CardUI } from "./Card";
 import { useGameStore } from "../store/useGameStore";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { GameCard, Relic } from "../types/game";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -14,7 +15,7 @@ export function ShopOverlay() {
 
   if (phase !== "SHOP") return null;
 
-  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
+  const relicBonus = player.relics.reduce((acc: number, r: Relic) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950 z-[130] flex flex-col items-center justify-center p-8 overflow-hidden">
@@ -43,7 +44,7 @@ export function ShopOverlay() {
               {shopSelectionMode === "REMOVE" ? `Costs ♦${removalPrice}` : `Costs ♦${upgradePrice}`}
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full overflow-y-auto max-h-[60vh] custom-scrollbar p-4">
-              {player.deck.map((card) => (
+              {player.deck.map((card: GameCard) => (
                 <button
                   key={card.instanceId}
                   onClick={() => {
