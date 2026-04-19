@@ -1399,7 +1399,44 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   endTurn: () => {
-    set({ phase: "ENEMY_TURN" as GamePhase, bannerText: "ENEMY TURN", selectedCards: [] });
+    set((state) => {
+      const { player, selectedCards, log } = state;
+      
+      // 1. Identify what to keep and what to recycle (same logic as Shuffle button)
+      const heldCards = [...selectedCards];
+      const cardsToReplace = player.hand.filter(
+        (h) => !heldCards.some((s) => s.instanceId === h.instanceId),
+      );
+
+      // 2. Create new deck from unselected cards + deck + discard
+      const fullPool = shuffle([
+        ...player.deck,
+        ...player.discard,
+        ...cardsToReplace,
+      ]);
+
+      // 3. Refill hand to 5
+      const drawCount = 5 - heldCards.length;
+      const drawn = fullPool.slice(0, drawCount);
+      const nextDeck = fullPool.slice(drawCount);
+
+      return {
+        phase: "ENEMY_TURN" as GamePhase,
+        bannerText: "ENEMY TURN",
+        selectedCards: [], // Clear visual selection for the next turn's start
+        player: {
+          ...player,
+          hand: [...heldCards, ...drawn],
+          deck: nextDeck,
+          discard: [],
+        },
+        log: [
+          `End Turn: Kept ${heldCards.length} cards and refreshed deck.`,
+          ...log,
+        ],
+      };
+    });
+
     setTimeout(() => {
       set({ bannerText: null });
       get().resolveEnemyTurn();
