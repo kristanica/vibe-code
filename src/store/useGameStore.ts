@@ -22,10 +22,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   score: 0,
   combo: 0,
   highestCombo: 0,
-  setCombo: (amount: number) => set((state) => {
-    const newHighest = Math.max(state.highestCombo, amount);
-    return { combo: amount, highestCombo: newHighest };
-  }),
+  setCombo: (amount: number) =>
+    set((state) => {
+      const newHighest = Math.max(state.highestCombo, amount);
+      return { combo: amount, highestCombo: newHighest };
+    }),
   addScore: (amount: number) =>
     set((state) => ({ score: state.score + amount })),
   resetScore: () => set({ score: 0, combo: 0, highestCombo: 0 }),
@@ -50,7 +51,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     level: 1,
     exp: 0,
     nextLevelExp: 100,
-    stats: { attackBonus: 0, maxHpBonus: 0, successRateBonus: 0 },
+    stats: { 
+      attackBonus: 0, 
+      maxHpBonus: 0, 
+      successRateBonus: 0,
+      focus: 0,
+      maxEnergyBonus: 0,
+      fortune: 0,
+      volatility: 0
+    },
+    failureStreak: 0,
+    entropy: 0,
   },
   enemy: null,
   floor: 1,
@@ -71,6 +82,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   removalPrice: 50,
   upgradePrice: 100,
   shopSelectionMode: "NONE",
+  tutorialStep: 0,
+  isTutorialOpen: true,
+  resolvingCard: null,
+  rollValue: null,
+
+  nextTutorialStep: () =>
+    set((state) => ({ tutorialStep: state.tutorialStep + 1 })),
+  finishTutorial: () => set({ isTutorialOpen: false, tutorialStep: 0 }),
+  openTutorial: () => set({ isTutorialOpen: true, tutorialStep: 0 }),
 
   addLog: (message: string) =>
     set((state) => ({ log: [message, ...state.log].slice(0, 50) })),
@@ -254,7 +274,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           oddsModifiers: [],
           statusEffects: [],
           chips: state.player.chips + 25,
+          entropy: 0,
+          failureStreak: 0,
         },
+        combo: 0,
         log: [logMsg, ...state.log],
         draftOptions,
       };
@@ -273,6 +296,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       .map((c) => ({ ...c, instanceId: crypto.randomUUID() }));
     set({
       phase: "STARTER_SELECT",
+      isTutorialOpen: false,
+      tutorialStep: 0,
       starterPicksRemaining: 3,
       draftOptions: pool,
       floor: 1,
@@ -300,7 +325,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         level: 1,
         exp: 0,
         nextLevelExp: 100,
-        stats: { attackBonus: 0, maxHpBonus: 0, successRateBonus: 0 },
+        stats: { 
+      attackBonus: 0, 
+      maxHpBonus: 0, 
+      successRateBonus: 0,
+      focus: 0,
+      maxEnergyBonus: 0,
+      fortune: 0,
+      volatility: 0
+    },
+        failureStreak: 0,
+        entropy: 0,
       },
     });
   },
@@ -350,11 +385,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         }
 
         const shuffledGenerated = shuffle(generatedCards);
-        // Initial hand: 3 picked cards + 2 random cards
         const initialHand = [...pickedCards, ...shuffledGenerated.slice(0, 2)];
         const initialDeck = shuffledGenerated.slice(2);
 
-        const enemy = createEnemyInstance(1, "NORMAL", state.player);
+        const enemy = createEnemyInstance(1, "NORMAL", state.player, 1);
         return {
           phase: "PLAYER_TURN",
           starterPicksRemaining: 0,
@@ -407,23 +441,42 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   shuffleHand: () => {
     set((state) => {
-      const { player, log } = state;
+      const { player, selectedCards, log } = state;
       if (player.shufflesRemaining <= 0) return state;
+
+      // Cards the player wants to KEEP
+      const heldCards = [...selectedCards];
+
+      // Cards the player wants to replace
+      const cardsToReplace = player.hand.filter(
+        (h) => !heldCards.some((s) => s.instanceId === h.instanceId),
+      );
+
+      // Create the new deck pool from current deck + discard + unselected cards
       const fullPool = shuffle([
         ...player.deck,
         ...player.discard,
-        ...player.hand,
+        ...cardsToReplace,
       ]);
+
+      // Refill hand to 5 cards
+      const drawCount = 5 - heldCards.length;
+      const drawn = fullPool.slice(0, drawCount);
+      const nextDeck = fullPool.slice(drawCount);
+
       return {
-        selectedCards: [],
+        selectedCards: [], // Clear selection after the action
         player: {
           ...player,
-          hand: fullPool.slice(0, 5),
-          deck: fullPool.slice(5),
+          hand: [...heldCards, ...drawn],
+          deck: nextDeck,
           discard: [],
           shufflesRemaining: player.shufflesRemaining - 1,
         },
-        log: [`Shuffled full deck into hand.`, ...log],
+        log: [
+          `Mulligan: Kept ${heldCards.length} cards and drew ${drawn.length} new ones.`,
+          ...log,
+        ],
       };
     });
   },
@@ -449,9 +502,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             : node.type === "ELITE"
               ? "ELITE"
               : "NORMAL";
-        const enemy = createEnemyInstance(state.floor, enemyType, state.player);
+              const enemy = createEnemyInstance(state.floor, enemyType, state.player, state.act);
 
-        // Handle Relics: Start Battle effects
+              // Handle Relics: Start Battle effects
         let initialBlock = 0;
         state.player.relics.forEach((r) => {
           if (r.effect.type === "START_BATTLE_BLOCK")
@@ -511,8 +564,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               hand: [],
               discard: [],
               tempDiscard: [],
-              discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
-              shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
+              discardsRemaining: Math.min(
+                3,
+                state.player.discardsRemaining + 1,
+              ),
+              shufflesRemaining: Math.min(
+                3,
+                state.player.shufflesRemaining + 1,
+              ),
             },
             log: [
               `Rested and recovered ${heal} HP, +1 Discard/Shuffle. Milestone ahead!`,
@@ -524,7 +583,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             bannerText: `FLOOR ${nextFloor}`,
           };
         } else {
-          const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player);
+          const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
           const finalPool = shuffle(reclaimedDeck);
           return {
             player: {
@@ -538,8 +597,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               statusEffects: [],
               playsRemaining: 3,
               energy: Math.min(state.player.maxEnergy, state.player.energy + 5),
-              discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
-              shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
+              discardsRemaining: Math.min(
+                3,
+                state.player.discardsRemaining + 1,
+              ),
+              shufflesRemaining: Math.min(
+                3,
+                state.player.shufflesRemaining + 1,
+              ),
             },
             log: [
               `Rested: +${heal} HP, +5 Energy, +1 Pitch/Mulligan. Heading to Battle!`,
@@ -657,7 +722,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           },
         };
       } else {
-        const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player);
+        const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
         const finalPool = shuffle(reclaimedDeck);
         return {
           phase: "PLAYER_TURN",
@@ -872,7 +937,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             log: capturedLog,
           };
         } else {
-          const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player);
+          const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
           const finalPool = shuffle(reclaimedDeck);
           return {
             phase: "PLAYER_TURN",
@@ -944,7 +1009,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           log: capturedLog,
         };
       } else {
-        const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player);
+        const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
         const finalPool = shuffle(reclaimedDeck);
         return {
           phase: "PLAYER_TURN",
@@ -1001,34 +1066,75 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return;
     }
 
+    const rollValue = Math.random() * 100;
+    
+    // START RESOLUTION PHASE
+    set({ 
+      phase: "RESOLUTION", 
+      resolvingCard: card, 
+      rollValue 
+    });
+
+    // Finalize after 2.5 seconds (1.5s ticker + 1s dwell time)
+    setTimeout(() => {
+      get().finishCardResolution();
+    }, 2500);
+  },
+
+  finishCardResolution: () => {
+    const s = get();
+    const { resolvingCard: card, rollValue } = s;
+    if (!card || rollValue === null) return;
+
     const finalOdds = calculateSuccessOdds(
       card,
       s.player,
       s.enemy,
+      s.combo,
       s.isGodMode,
     );
-    const roll = Math.random() * 100;
-    const isSuccess = roll <= finalOdds;
+    const isSuccess = rollValue <= finalOdds;
 
-    sounds.playCardPlay();
-    setTimeout(() => {
-      if (isSuccess) sounds.playSuccess();
-      else sounds.playFailure();
-    }, 300);
+    // Update new probability systems
+    const nextEntropy = isSuccess ? s.player.entropy + 1 : s.player.entropy;
+    
+    // Pity Jammer check
+    const isPityJammed = s.enemy?.jamsPity;
+    const nextFailureStreak = isSuccess 
+      ? 0 
+      : (isPityJammed ? s.player.failureStreak : s.player.failureStreak + 1);
+
+    if (isSuccess) sounds.playSuccess();
+    else sounds.playFailure();
 
     s.addLog(
-      `Played ${card.name} (${finalOdds}%)... ${isSuccess ? "SUCCESS!" : "FAILED!"}`,
+      `Roll: ${Math.floor(rollValue)} vs Target ${finalOdds}%... ${isSuccess ? "SUCCESS!" : "FAILED!"}`,
     );
+    
+    if (!isSuccess && rollValue <= finalOdds + 3) {
+      s.addLog(`SO CLOSE! Just missed the threshold.`);
+    }
+    if (!isSuccess && s.enemy?.punishesFailure) {
+      s.addLog(`Vibe Check: ${s.enemy.name} gained 5 Block from your failure.`);
+    }
+
     set({ lastResult: isSuccess ? "SUCCESS" : "FAILURE", selectedCards: [] });
     setTimeout(() => set({ lastResult: null }), 800);
 
     // Award points for playing a card and handle combos
     if (isSuccess) {
-      const newCombo = s.combo + 1;
+      // Combo Freeze check
+      const isComboFrozen = s.enemy?.freezesCombo;
+      const newCombo = isComboFrozen ? s.combo : s.combo + 1;
+      
+      if (isComboFrozen && s.combo > 0) {
+        s.addLog(`Combo Frozen: Momentum cannot increase.`);
+      }
+
       get().setCombo(newCombo);
       const comboBonus = newCombo > 1 ? newCombo * 5 : 0;
       get().addScore(10 + comboBonus);
-      if (comboBonus > 0) {
+      if (comboBonus > 0 && !isComboFrozen) {
         s.addLog(`COMBO x${newCombo}! (+${comboBonus} Bonus Score)`);
       }
     } else {
@@ -1038,12 +1144,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
 
     set((state) => {
-      const { player, enemy, isGodMode, floor } = state;
+      const { player, enemy, isGodMode, floor, combo } = state;
       const {
         player: nextPlayer,
         enemy: nextEnemyRaw,
         logs,
-      } = applyCardEffects(isSuccess, card, player, enemy, isGodMode);
+      } = applyCardEffects(isSuccess, card, player, enemy, combo, isGodMode);
 
       const nextHand = nextPlayer.hand.filter(
         (c) => c.instanceId !== card.instanceId,
@@ -1056,11 +1162,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         ? nextPlayer.playsRemaining
         : nextPlayer.playsRemaining - 1;
 
-      const nextEnemy = nextEnemyRaw ? { ...nextEnemyRaw } : null;
+      let nextEnemy = nextEnemyRaw ? { ...nextEnemyRaw } : null;
+      
+      if (!isSuccess && nextEnemy?.punishesFailure) {
+        nextEnemy.block += 5;
+      }
+
       const nextLog = [...logs, ...state.log];
 
       if (nextEnemy && nextEnemy.hp <= 0) {
-        // Award points for defeating an enemy (normal = 100, elite = 250, boss = 500)
         let scoreAward = 100;
         if (nextEnemy.type === "ELITE") scoreAward = 250;
         if (nextEnemy.type === "BOSS") scoreAward = 500;
@@ -1114,6 +1224,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             phase: "EVENT",
             currentEvent: eliteEvent,
             enemy: null,
+            resolvingCard: null,
+            rollValue: null,
             player: {
               ...nextPlayer,
               exp: v.nextExp,
@@ -1128,7 +1240,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               oddsModifiers: [],
               statusEffects: [],
               chips: nextPlayer.chips + 25,
+              entropy: 0,
+              failureStreak: 0,
             },
+            combo: 0,
             log: [
               `Elite Victory! +${v.expGained} EXP earned.`,
               ...v.logs,
@@ -1140,6 +1255,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         return {
           phase: v.isLevelUp ? "LEVEL_UP" : v.isPitBoss ? "ACT_CLEAR" : "DRAFT",
           enemy: null,
+          resolvingCard: null,
+          rollValue: null,
           player: {
             ...nextPlayer,
             exp: v.nextExp,
@@ -1154,7 +1271,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             oddsModifiers: [],
             statusEffects: [],
             chips: nextPlayer.chips + 25,
+            entropy: 0,
+            failureStreak: 0,
           },
+          combo: 0,
           log: [
             `Victory! +25 Chips & +${v.expGained} EXP earned.`,
             ...v.logs,
@@ -1165,12 +1285,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
 
       return {
+        phase: "PLAYER_TURN",
+        resolvingCard: null,
+        rollValue: null,
         player: {
           ...nextPlayer,
           hand: nextHand,
           discard: nextDiscard,
           energy: nextEnergy,
           playsRemaining: nextPlays,
+          entropy: nextEntropy,
+          failureStreak: nextFailureStreak,
         },
         enemy: nextEnemy,
         log: nextLog.slice(0, 50),
@@ -1228,7 +1353,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           ],
         };
       } else {
-        const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player);
+        const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, state.act);
         const finalPool = shuffle(reclaimedDeck);
         return {
           phase: "PLAYER_TURN",
@@ -1266,13 +1391,28 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       nextLevelExp = Math.floor(nextLevelExp * 1.5);
 
       const newStats = { ...stats };
-      if (stat === "attackBonus") newStats.attackBonus += 1;
+      let newMaxHp = maxHp;
+      let newHp = hp;
+      let newMaxEnergy = state.player.maxEnergy;
+      let newMaxPlays = state.player.maxPlays;
+
+      if (stat === "attackBonus") newStats.attackBonus += 10;
       if (stat === "maxHpBonus") {
         newStats.maxHpBonus += 5;
-        maxHp += 5;
-        hp += 5;
+        newMaxHp += 5;
+        newHp += 5;
       }
       if (stat === "successRateBonus") newStats.successRateBonus += 2;
+      if (stat === "focus") {
+        newStats.focus += 1;
+        newMaxPlays += 1;
+      }
+      if (stat === "maxEnergyBonus") {
+        newStats.maxEnergyBonus += 2;
+        newMaxEnergy += 2;
+      }
+      if (stat === "fortune") newStats.fortune += 1;
+      if (stat === "volatility") newStats.volatility += 1;
 
       return {
         phase: "DRAFT",
@@ -1282,12 +1422,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           exp,
           nextLevelExp,
           stats: newStats,
-          maxHp,
-          hp,
+          maxHp: newMaxHp,
+          hp: newHp,
+          maxEnergy: newMaxEnergy,
+          maxPlays: newMaxPlays,
           discardsRemaining: Math.min(3, state.player.discardsRemaining + 1),
           shufflesRemaining: Math.min(3, state.player.shufflesRemaining + 1),
         },
-        log: [`Leveled up to ${level}! Upgraded ${stat}. (+1 Discard/Shuffle)`, ...state.log],
+        log: [
+          `Leveled up to ${level}! Upgraded ${stat}. (+1 Discard/Shuffle)`,
+          ...state.log,
+        ],
       };
     });
   },
@@ -1472,7 +1617,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         };
       }
 
-      const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player);
+      const enemy = createEnemyInstance(nextFloor, "NORMAL", state.player, nextAct);
       const finalPool = shuffle(newFullDeck);
 
       const availableCards = getAvailableCards(STARTER_CARDS, state.player);

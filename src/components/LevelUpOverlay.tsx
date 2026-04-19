@@ -1,17 +1,17 @@
 import { motion } from "framer-motion";
-import { Swords, Heart, Sparkles } from "lucide-react";
+import { Swords, Heart, Sparkles, Zap, Battery, Dice5, TrendingUp } from "lucide-react";
 import { useGameStore } from "../store/useGameStore";
+import { useMemo } from "react";
+import { shuffle } from "../utils/gameEngine";
 
 export function LevelUpOverlay() {
   const { phase, player, upgradeStat } = useGameStore();
 
-  if (phase !== "LEVEL_UP") return null;
-
-  const options = [
+  const allOptions = useMemo(() => [
     {
       id: "attackBonus" as const,
       name: "Slayer's Edge",
-      description: "+1 Permanent Damage to all attacks",
+      description: "+10% Permanent Damage to all attacks",
       icon: <Swords size={32} className="text-red-500" />,
       color: "border-red-500/30 hover:border-red-500 bg-red-500/5",
     },
@@ -29,7 +29,41 @@ export function LevelUpOverlay() {
       icon: <Sparkles size={32} className="text-indigo-500" />,
       color: "border-indigo-500/30 hover:border-indigo-500 bg-indigo-500/5",
     },
-  ];
+    {
+      id: "focus" as const,
+      name: "Focus",
+      description: "+1 Max Play per turn",
+      icon: <Zap size={32} className="text-yellow-500" />,
+      color: "border-yellow-500/30 hover:border-yellow-500 bg-yellow-500/5",
+    },
+    {
+      id: "maxEnergyBonus" as const,
+      name: "Capacitance",
+      description: "+2 Max Energy limit per floor",
+      icon: <Battery size={32} className="text-blue-500" />,
+      color: "border-blue-500/30 hover:border-blue-500 bg-blue-500/5",
+    },
+    {
+      id: "fortune" as const,
+      name: "Fortune",
+      description: "+1% Pity Bonus per failure",
+      icon: <Dice5 size={32} className="text-purple-500" />,
+      color: "border-purple-500/30 hover:border-purple-500 bg-purple-500/5",
+    },
+    {
+      id: "volatility" as const,
+      name: "Volatility",
+      description: "+1% Combo Bonus per success",
+      icon: <TrendingUp size={32} className="text-orange-500" />,
+      color: "border-orange-500/30 hover:border-orange-500 bg-orange-500/5",
+    },
+  ], []);
+
+  const selectedOptions = useMemo(() => {
+    return shuffle(allOptions).slice(0, 3);
+  }, [allOptions, player.level]);
+
+  if (phase !== "LEVEL_UP") return null;
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-8">
@@ -52,7 +86,7 @@ export function LevelUpOverlay() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          {options.map((opt) => (
+          {selectedOptions.map((opt) => (
             <button
               key={opt.id}
               onClick={() => upgradeStat(opt.id)}

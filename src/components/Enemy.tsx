@@ -1,5 +1,5 @@
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import { Skull, AlertTriangle, Dice5, Shield, Sparkles, Swords } from "lucide-react";
+import { Skull, AlertTriangle, Dice5, Shield, Sparkles, Swords, Info } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { StatusAuras } from "./StatusAuras";
@@ -15,12 +15,17 @@ interface FloatingDamage {
 
 export function Enemy({ enemy }: EnemyProps) {
   const { phase, bannerText, isGodMode, instaWin } = useGameStore();
+  const [isIntentHovered, setIsIntentHovered] = useState(false);
   const hpPercent = (enemy.hp / enemy.maxHp) * 100;
   const controls = useAnimation();
   const [damageNumbers, setDamageNumbers] = useState<FloatingDamage[]>([]);
+  const [blockNumbers, setBlockNumbers] = useState<FloatingDamage[]>([]);
   const prevHp = useRef(enemy.hp);
+  const prevBlock = useRef(enemy.block);
 
-  // Take Damage Animation
+  const currentMove = enemy.moves[enemy.nextMoveIndex];
+
+  // Take Damage Animation (HP)
   useEffect(() => {
     if (enemy.hp < prevHp.current && !isGodMode) {
       const damage = prevHp.current - enemy.hp;
@@ -43,6 +48,25 @@ export function Enemy({ enemy }: EnemyProps) {
     }
     prevHp.current = enemy.hp;
   }, [enemy.hp, controls, isGodMode]);
+
+  // Block Hit Animation
+  useEffect(() => {
+    if (enemy.block < prevBlock.current && !isGodMode) {
+      const blockLost = prevBlock.current - enemy.block;
+
+      controls.start({
+        scale: [1, 0.95, 1.05, 1],
+        transition: { duration: 0.2 },
+      });
+
+      const id = Date.now() + 1; // Unique ID
+      setBlockNumbers((prev) => [...prev, { id, value: blockLost }]);
+      setTimeout(() => {
+        setBlockNumbers((prev) => prev.filter((num) => num.id !== id));
+      }, 1000);
+    }
+    prevBlock.current = enemy.block;
+  }, [enemy.block, controls, isGodMode]);
 
   // Context-Aware Action Animations
   useEffect(() => {
@@ -82,7 +106,7 @@ export function Enemy({ enemy }: EnemyProps) {
 
   return (
     <div className="flex flex-col items-center gap-6 relative">
-      {/* Floating Damage Numbers */}
+      {/* Floating Damage Numbers (HP) */}
       <AnimatePresence>
         {damageNumbers.map((num) => (
           <motion.div
@@ -91,6 +115,22 @@ export function Enemy({ enemy }: EnemyProps) {
             animate={{ opacity: 1, y: -100, scale: 1.5 }}
             exit={{ opacity: 0 }}
             className="absolute z-50 text-red-500 font-black text-4xl italic tracking-tighter drop-shadow-[0_0_10px_rgba(239,68,68,0.5)] pointer-events-none"
+            style={{ top: "20%" }}
+          >
+            -{num.value}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Floating Block Numbers (Armor) */}
+      <AnimatePresence>
+        {blockNumbers.map((num) => (
+          <motion.div
+            key={num.id}
+            initial={{ opacity: 0, y: 0, scale: 0.5 }}
+            animate={{ opacity: 1, y: -100, scale: 1.5 }}
+            exit={{ opacity: 0 }}
+            className="absolute z-50 text-blue-400 font-black text-4xl italic tracking-tighter drop-shadow-[0_0_10px_rgba(96,165,250,0.5)] pointer-events-none"
             style={{ top: "20%" }}
           >
             -{num.value}
@@ -132,12 +172,20 @@ export function Enemy({ enemy }: EnemyProps) {
               <Sparkles size={48} className="text-indigo-900 lg:scale-150" />
             )}
 
-            {/* Hit overlay flash */}
+            {/* Hit overlay flash (HP) */}
             <motion.div
               animate={{ opacity: [0, 0.4, 0] }}
               transition={{ duration: 0.3 }}
-              key={enemy.hp} // Re-run when HP changes
+              key={`hp-${enemy.hp}`}
               className="absolute inset-0 bg-red-500 pointer-events-none opacity-0"
+            />
+
+            {/* Hit overlay flash (Block) */}
+            <motion.div
+              animate={{ opacity: [0, 0.4, 0] }}
+              transition={{ duration: 0.3 }}
+              key={`block-${enemy.block}`}
+              className="absolute inset-0 bg-blue-500 pointer-events-none opacity-0"
             />
 
             {/* Animated Pulse */}
@@ -154,12 +202,18 @@ export function Enemy({ enemy }: EnemyProps) {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           key={enemy.intent}
-          className="absolute -top-4 -right-4 bg-red-600 p-2 rounded-xl border-4 border-slate-950 shadow-xl z-20"
+          onMouseEnter={() => setIsIntentHovered(true)}
+          onMouseLeave={() => setIsIntentHovered(null as any)}
+          className="absolute -top-4 -right-4 bg-red-600 p-2 rounded-xl border-4 border-slate-950 shadow-xl z-20 cursor-help"
         >
-          <div className="flex flex-col items-center min-w-[60px]">
-            <span className="text-[8px] font-black uppercase tracking-widest text-white/70">
-              Intent
-            </span>
+          <div className="flex flex-col items-center min-w-[70px]">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[8px] font-black uppercase tracking-widest text-white/70">
+                Intent
+              </span>
+              <Info size={10} className="text-white/50" />
+            </div>
+            
             <div className="flex items-center gap-1 font-black text-white italic tracking-tighter uppercase">
               {enemy.intent === "ATTACK" && (
                 <>
@@ -197,13 +251,31 @@ export function Enemy({ enemy }: EnemyProps) {
                 </>
               )}
             </div>
-            {/* Show secondary intent if exists */}
-            {enemy.moves[enemy.nextMoveIndex]?.secondaryIntent && (
-               <div className="flex items-center gap-1 mt-1 text-[9px] font-black text-white/80 italic tracking-tighter uppercase">
-                  <span>+ {enemy.moves[enemy.nextMoveIndex].secondaryIntent}</span>
-               </div>
-            )}
           </div>
+
+          {/* Intent Tooltip */}
+          <AnimatePresence>
+            {isIntentHovered && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, x: 20 }}
+                animate={{ opacity: 1, y: 0, x: 20 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute left-full top-0 ml-4 w-48 p-3 bg-slate-900 border-2 border-red-500/50 rounded-2xl shadow-2xl z-50 pointer-events-none"
+              >
+                <div className="text-[10px] font-black uppercase text-red-400 mb-1 tracking-widest border-b border-red-500/20 pb-1">
+                   {enemy.intent} Move
+                </div>
+                <p className="text-[11px] font-bold text-slate-200 leading-tight italic">
+                   {enemy.moves[enemy.nextMoveIndex]?.description || "Prepares a standard action."}
+                </p>
+                {enemy.moves[enemy.nextMoveIndex]?.secondaryIntent && (
+                  <div className="mt-2 text-[9px] font-black text-white/60 uppercase">
+                    Also: {enemy.moves[enemy.nextMoveIndex].secondaryIntent}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Block Indicator */}

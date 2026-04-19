@@ -1,15 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, Swords, Shield, Sparkles } from "lucide-react";
+import { RotateCcw, Swords, Shield, Sparkles, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { calculateProbabilityBreakdown } from "../utils/gameEngine";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function FocusedCardModal() {
-  const { focusedCard, setFocusedCard, player, enemy } = useGameStore();
+  const { focusedCard, setFocusedCard, player, enemy, combo, isGodMode } = useGameStore();
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -28,26 +31,16 @@ export function FocusedCardModal() {
     return "text-red-400";
   };
 
-  // Calculate accurate odds
-  let statusModifier = 0;
-  if (focusedCard) {
-    player.statusEffects.forEach(e => { 
-      if (e.type === 'SHARP_EYE') statusModifier += e.value; 
-      if (e.type === 'DEBUFF_ODDS') statusModifier += e.value; 
-    });
-  }
-  
-  const relicBonus = player.relics.reduce((acc, r) => r.effect.type === 'GLOBAL_SUCCESS_CHANCE' ? acc + r.effect.value : acc, 0);
-  const totalBonus = player.stats.successRateBonus + statusModifier + relicBonus;
+  // Calculate accurate odds using new engine
+  const breakdown = focusedCard 
+    ? calculateProbabilityBreakdown(focusedCard, player, enemy, combo, isGodMode)
+    : null;
+  const finalOdds = breakdown ? breakdown.finalOdds : 0;
 
-  const finalOdds = focusedCard 
-    ? Math.max(5, Math.min(100, 
-        focusedCard.baseOdds + 
-        player.oddsModifiers.reduce((acc, m) => acc + m.value, 0) + 
-        (enemy?.debuffOdds || 0) + 
-        totalBonus
-      ))
-    : 0;
+  // Reset flip state when card changes
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [focusedCard]);
 
   return (
     <AnimatePresence>
@@ -63,14 +56,15 @@ export function FocusedCardModal() {
 
           <motion.div
             initial={{ scale: 0.5, rotateY: 0, opacity: 0, y: 100 }}
-            animate={{ scale: 1, rotateY: 180, opacity: 1, y: 0 }}
+            animate={{ scale: 1, rotateY: isFlipped ? 180 : 0, opacity: 1, y: 0 }}
             exit={{ scale: 0.5, rotateY: 0, opacity: 0, y: 100 }}
-            transition={{ type: "spring", stiffness: 450, damping: 35, mass: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
             style={{ transformStyle: "preserve-3d" }}
             className="relative w-full max-w-sm h-[550px] perspective-2000"
           >
+            {/* FRONT SIDE (Intel & Effects) */}
             <div
-              style={{ transform: "rotateY(180deg)" }}
+              style={{ backfaceVisibility: "hidden" }}
               className="absolute inset-0 bg-slate-900 border-4 border-indigo-500/50 rounded-3xl shadow-[0_0_50px_rgba(79,70,229,0.3)] flex flex-col overflow-hidden"
             >
               <div className="bg-slate-950 border-b border-slate-800 p-4 flex justify-between items-center z-20">
@@ -82,12 +76,20 @@ export function FocusedCardModal() {
                     Card Intel
                   </span>
                 </div>
-                <button
-                  onClick={() => setFocusedCard(null)}
-                  className="p-2 hover:bg-slate-800 rounded-full transition-colors"
-                >
-                  <RotateCcw size={20} className="text-slate-400" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsFlipped(true)}
+                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-lg transition-colors"
+                  >
+                    Flip Card
+                  </button>
+                  <button
+                    onClick={() => setFocusedCard(null)}
+                    className="p-2 hover:bg-slate-800 rounded-full transition-colors"
+                  >
+                    <X size={20} className="text-slate-400" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 custom-scrollbar select-text z-10">
@@ -122,26 +124,6 @@ export function FocusedCardModal() {
                           </span>
                           <span className="text-emerald-400 font-black text-2xl italic tracking-tighter">
                             {focusedCard.successEffect.block}
-                          </span>
-                        </div>
-                      )}
-                      {focusedCard.successEffect.oddsModifier && (
-                        <div className="flex justify-between items-center border-b border-emerald-500/10 pb-3">
-                          <span className="text-indigo-300/60 font-bold text-xs uppercase">
-                            Crit Chance
-                          </span>
-                          <span className="text-indigo-400 font-black text-2xl italic tracking-tighter">
-                            +{focusedCard.successEffect.oddsModifier}%
-                          </span>
-                        </div>
-                      )}
-                      {focusedCard.successEffect.drawCards && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sky-300/60 font-bold text-xs uppercase">
-                            Draw Cards
-                          </span>
-                          <span className="text-sky-400 font-black text-2xl italic tracking-tighter">
-                            {focusedCard.successEffect.drawCards}
                           </span>
                         </div>
                       )}
@@ -198,43 +180,70 @@ export function FocusedCardModal() {
                 </div>
               </div>
 
-              <div className="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center z-20">
+              <div className="bg-slate-950 p-4 border-t border-slate-800 z-20 flex flex-col gap-3">
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                    Base Odds
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                    Probability Matrix
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "text-2xl font-black italic tracking-tighter",
-                        getProbabilityColor(finalOdds - totalBonus),
-                      )}
-                    >
-                      {finalOdds - totalBonus}%
-                    </span>
-                    {totalBonus !== 0 && (
-                      <div className="px-1.5 py-0.5 bg-indigo-500/20 rounded border border-indigo-500/30">
-                        <span className="text-[9px] font-black text-indigo-300 uppercase">
-                          {totalBonus > 0 ? '+' : ''}{totalBonus}% Bonus
-                        </span>
+                  
+                  {breakdown && (
+                    <div className="space-y-1 mb-2 bg-slate-900/50 p-2 rounded-lg border border-slate-800">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                        <span>Base Odds</span>
+                        <span>{breakdown.baseOdds}%</span>
                       </div>
-                    )}
+                      {breakdown.layers.map((layer, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-[10px] font-bold">
+                          <span className={layer.value >= 0 ? "text-indigo-300" : "text-rose-400"}>{layer.name}</span>
+                          <span className={layer.value >= 0 ? "text-indigo-400" : "text-rose-500"}>
+                            {layer.value > 0 ? "+" : ""}{layer.value}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-end">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "text-3xl font-black italic tracking-tighter leading-none",
+                          getProbabilityColor(finalOdds),
+                        )}
+                      >
+                        {finalOdds}%
+                      </span>
+                    </div>
+                    <div className="px-3 py-1.5 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      {focusedCard.rarity}
+                    </div>
                   </div>
-                </div>
-                <div className="px-4 py-2 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {focusedCard.rarity} CLASS
                 </div>
               </div>
             </div>
 
-            <div className="absolute inset-0 bg-slate-900 border-4 border-slate-800 rounded-3xl backface-hidden flex flex-col items-center justify-center p-8 gap-4 shadow-2xl">
-              <div className="p-4 rounded-full bg-slate-800 text-indigo-400">
+            {/* BACK SIDE (Original Card Face) */}
+            <div
+              style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+              className="absolute inset-0 bg-slate-900 border-4 border-slate-800 rounded-3xl flex flex-col items-center justify-center p-8 gap-6 shadow-2xl"
+            >
+              <button
+                onClick={() => setIsFlipped(false)}
+                className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-white transition-colors"
+              >
+                <RotateCcw size={20} />
+              </button>
+              
+              <div className="p-6 rounded-full bg-slate-800 text-indigo-400">
                 {getTypeIcon(focusedCard.type)}
               </div>
-              <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white text-center">
+              <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white text-center">
                 {focusedCard.name}
               </h3>
-              <div className="w-12 h-1 bg-indigo-500/50 rounded-full" />
+              <div className="w-16 h-1.5 bg-indigo-500/50 rounded-full" />
+              <p className="text-slate-400 font-bold uppercase text-center tracking-widest text-xs">
+                Class: {focusedCard.rarity}
+              </p>
             </div>
           </motion.div>
         </div>

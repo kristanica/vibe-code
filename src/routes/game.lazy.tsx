@@ -13,12 +13,15 @@ import { DraftOverlay } from "../components/DraftOverlay";
 import { LevelUpOverlay } from "../components/LevelUpOverlay";
 import { TreasureOverlay } from "../components/TreasureOverlay";
 import { StatusHeader } from "../components/StatusHeader";
-import { TurnVisuals } from "../components/TurnVisuals";
+import { ResolutionVisual } from "../components/ResolutionVisual";
 import { AnimatePresence } from "framer-motion";
-import { ArrowRight, RotateCcw, ScrollText, Skull } from "lucide-react";
+import { ArrowRight, RotateCcw, ScrollText, Skull, BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { calculateProbabilityBreakdown } from "../utils/gameEngine";
+import { TutorialOverlay } from "../components/TutorialOverlay";
+import { ProbabilityMatrixWidget } from "../components/ProbabilityMatrixWidget";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,6 +42,10 @@ export function Game() {
     setFocusedCard,
     shuffleHand,
     discardSelected,
+    combo,
+    isGodMode,
+    isTutorialOpen,
+    openTutorial,
   } = useGameStore();
 
   const [isDeckViewOpen, setIsDeckViewOpen] = useState(false);
@@ -71,7 +78,14 @@ export function Game() {
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden p-4 lg:p-6 bg-slate-950 relative">
-      <TurnVisuals />
+      {isTutorialOpen && <TutorialOverlay />}
+      <ResolutionVisual />
+      
+      {/* Probability Matrix Widget - Bottom Left */}
+      <div className="absolute bottom-32 left-6 z-50">
+        <ProbabilityMatrixWidget />
+      </div>
+
       <FocusedCardModal />
       <DeckViewModal
         isOpen={isDeckViewOpen}
@@ -114,16 +128,14 @@ export function Game() {
             <AnimatePresence>
               {player.hand.map((card) => {
                const isSelected = selectedCards.some(c => c.instanceId === card.instanceId);
-               let statusModifier = 0;
-               player.statusEffects.forEach(e => { 
-                 if (e.type === 'SHARP_EYE') statusModifier += e.value; 
-                 if (e.type === 'DEBUFF_ODDS') statusModifier += e.value; 
-               });
 
-               let relicBonus = 0;
-               player.relics.forEach(r => {
-                 if (r.effect.type === 'GLOBAL_SUCCESS_CHANCE') relicBonus += r.effect.value;
-               });
+               const breakdown = calculateProbabilityBreakdown(
+                 card,
+                 player,
+                 enemy,
+                 combo,
+                 isGodMode
+               );
 
                return (
                 <CardUI
@@ -135,11 +147,7 @@ export function Game() {
                   }}
                   onInfoClick={() => setFocusedCard(card)}
                   disabled={phase !== "PLAYER_TURN" || player.energy < card.cost}
-                  modifiers={player.oddsModifiers}
-                  enemyDebuff={enemy?.debuffOdds || 0}
-                  playerStatBonus={player.stats.successRateBonus}
-                  statusModifier={statusModifier}
-                  relicBonus={relicBonus}
+                  breakdown={breakdown}
                   isSelected={isSelected}
                 />
               );

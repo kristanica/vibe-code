@@ -97,7 +97,7 @@ export const generateMapNodes = (floor: number): MapNode[] => {
   ];
 };
 
-export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'BOSS' = 'NORMAL', player?: PlayerState): Enemy => {
+export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'BOSS', player?: PlayerState, act: number = 1): Enemy => {
   // New Scaling Curve:
   // Floor 1: 0.5x (Very weak)
   // Floor 3: 0.8x (Approaching standard)
@@ -176,26 +176,120 @@ export const createEnemyInstance = (floor: number, type: 'NORMAL' | 'ELITE' | 'B
 
 // Pure Logic Functions for Battle
 
-export const calculateSuccessOdds = (card: GameCard, player: PlayerState, enemy: Enemy | null, isGodMode: boolean): number => {
-  if (isGodMode) return 100;
-  
-  let statusOddsMod = 0;
-  player.statusEffects.forEach(e => {
-    if (e.type === 'SHARP_EYE') statusOddsMod += e.value;
-    if (e.type === 'DEBUFF_ODDS') statusOddsMod += e.value;
-  });
-  
-  // Relic: GLOBAL_SUCCESS_CHANCE
-  let relicOddsBonus = 0;
-  player.relics.forEach(r => {
-    if (r.effect.type === 'GLOBAL_SUCCESS_CHANCE') relicOddsBonus += r.effect.value;
-  });
+export const calculateProbabilityBreakdown = (
+  card: GameCard,
+  player: PlayerState,
+  enemy: Enemy | null,
+  combo: number,
+  isGodMode: boolean
+): ProbabilityBreakdown => {
+  const layers: ProbabilityLayer[] = [];
 
-  let finalOdds = card.baseOdds + statusOddsMod + player.stats.successRateBonus + relicOddsBonus;
-  player.oddsModifiers.forEach(m => finalOdds += m.value);
-  if (enemy?.debuffOdds) finalOdds += enemy.debuffOdds;
-  
-  return Math.max(5, Math.min(100, finalOdds));
+  let finalOdds = card.baseOdds;
+
+  if (isGodMode) {
+    layers.push({ name: "God Mode", value: 100 - finalOdds });
+    return { baseOdds: card.baseOdds, layers, finalOdds: 100 };
+  }
+
+  // 1. Status Effects (Buffs/Debuffs)
+  let statusOddsMod = 0;
+  player.statusEffects.forEach((e) => {
+    if (e.type === "SHARP_EYE") statusOddsMod += e.value;
+    if (e.type === "DEBUFF_ODDS") statusOddsMod += e.value;
+  });
+  if (statusOddsMod !== 0) {
+    layers.push({ name: "Status Effects", value: statusOddsMod });
+    finalOdds += statusOddsMod;
+  }
+
+  // 2. Player Stats
+  if (player.stats.successRateBonus !== 0) {
+    layers.push({ name: "Base Stats", value: player.stats.successRateBonus });
+    finalOdds += player.stats.successRateBonus;
+  }
+
+  // 3. Relics
+  let relicOddsBonus = 0;
+  player.relics.forEach((r) => {
+    if (r.effect.type === "GLOBAL_SUCCESS_CHANCE")
+      relicOddsBonus += r.effect.value;
+  });
+  if (relicOddsBonus !== 0) {
+    layers.push({ name: "Relics", value: relicOddsBonus });
+    finalOdds += relicOddsBonus;
+  }
+
+  // 4. Temporary Modifiers
+  let tempMods = 0;
+  player.oddsModifiers.forEach((m) => (tempMods += m.value));
+  if (tempMods !== 0) {
+    layers.push({ name: "Temporary Modifiers", value: tempMods });
+    finalOdds += tempMods;
+  }
+
+  // 5. Enemy Debuffs
+  if (enemy?.debuffOdds) {
+    layers.push({ name: "Enemy Debuff", value: enemy.debuffOdds });
+    finalOdds += enemy.debuffOdds;
+  }
+
+  // --- NEW SYSTEMS ---
+
+  // 6. Streak System (Combo)
+  if (combo > 0) {
+    const hasComboBoost = player.relics.some(r => r.effect.type === 'COMBO_CAP_BOOST');
+    const comboCap = hasComboBoost ? 20 : 10;
+    // Base 2% + Volatility stat per active combo
+    const bonusPerCombo = 2 + player.stats.volatility;
+    const streakBonus = Math.min(comboCap, combo * bonusPerCombo);
+    layers.push({ name: "Combo Streak", value: streakBonus });
+    finalOdds += streakBonus;
+  }
+
+  // 7. Pity System (Failure Streak)
+  if (player.failureStreak > 0) {
+    const hasDoublePity = player.relics.some(r => r.effect.type === 'DOUBLE_PITY');
+    const pityPerFail = (5 + player.stats.fortune) * (hasDoublePity ? 2 : 1);
+    const pityCap = hasDoublePity ? 50 : 25;
+    
+    // Base 5% + Fortune stat per consecutive failure
+    const pityBonus = Math.min(pityCap, player.failureStreak * pityPerFail);
+    layers.push({ name: "Pity Bonus", value: pityBonus });
+    finalOdds += pityBonus;
+  }
+
+  // 8. Entropy System (Overuse)
+  if (player.entropy > 0) {
+    const hasLiquidCooling = player.relics.some(r => r.effect.type === 'HALVE_ENTROPY_GAIN');
+    const entropyDivisor = hasLiquidCooling ? 4 : 2;
+    
+    // -0.5% (or -0.25% with relic) per entropy point
+    const entropyPenalty = Math.floor(-player.entropy / entropyDivisor);
+    if (entropyPenalty !== 0) {
+      layers.push({ name: "Entropy", value: entropyPenalty });
+      finalOdds += entropyPenalty;
+    }
+  }
+
+  // Boundary Checks
+  finalOdds = Math.max(5, Math.min(100, finalOdds));
+
+  return {
+    baseOdds: card.baseOdds,
+    layers,
+    finalOdds,
+  };
+};
+
+export const calculateSuccessOdds = (
+  card: GameCard,
+  player: PlayerState,
+  enemy: Enemy | null,
+  combo: number,
+  isGodMode: boolean
+): number => {
+  return calculateProbabilityBreakdown(card, player, enemy, combo, isGodMode).finalOdds;
 };
 
 export const applyCardEffects = (
@@ -203,9 +297,15 @@ export const applyCardEffects = (
   card: GameCard, 
   player: PlayerState, 
   enemy: Enemy | null,
+  combo: number,
   isGodMode: boolean
 ): { player: PlayerState, enemy: Enemy | null, logs: string[] } => {
-  const nextPlayer = { ...player, statusEffects: [...player.statusEffects] };
+  // 1. Consume Action-based status effects that were active BEFORE this play.
+  const statusAfterConsumption = player.statusEffects
+    .map(e => (e.durationType === 'ACTION' ? { ...e, duration: e.duration - 1 } : e))
+    .filter(e => e.duration > 0);
+
+  const nextPlayer = { ...player, statusEffects: statusAfterConsumption };
   const nextEnemy = enemy ? { ...enemy, statusEffects: [...enemy.statusEffects] } : null;
   const logs: string[] = [];
 
@@ -221,12 +321,10 @@ export const applyCardEffects = (
     }
   });
 
-  const hasDoubleDown = nextPlayer.statusEffects.some(e => e.type === 'DOUBLE_DOWN');
-  const effectCount = (isSuccess && hasDoubleDown) ? 2 : 1;
+  const hadDoubleDown = player.statusEffects.some(e => e.type === 'DOUBLE_DOWN');
+  const effectCount = (isSuccess && hadDoubleDown) ? 2 : 1;
   
-  if (hasDoubleDown) {
-    const ddIndex = nextPlayer.statusEffects.findIndex(e => e.type === 'DOUBLE_DOWN');
-    if (ddIndex > -1) nextPlayer.statusEffects.splice(ddIndex, 1);
+  if (hadDoubleDown) {
     if (isSuccess) {
       logs.unshift(`Double Down triggered! Effects doubled.`);
     } else {
@@ -234,24 +332,34 @@ export const applyCardEffects = (
     }
   }
 
-  if (!isSuccess) {
-    const hadSharpEye = nextPlayer.statusEffects.some(e => e.type === 'SHARP_EYE');
-    if (hadSharpEye) {
-      nextPlayer.statusEffects = nextPlayer.statusEffects.filter(e => e.type !== 'SHARP_EYE');
-      logs.unshift(`Next card buff lost on failure.`);
-    }
-  }
-
+  // 2. Apply the actual card effects
   for (let i = 0; i < effectCount; i++) {
     const effect = isSuccess ? card.successEffect : card.failEffect;
     if (effect) {
-      if (effect.damage && nextEnemy) {
+      if ((effect.damage || effect.conditionalDamage) && nextEnemy) {
+        let baseDamage = effect.damage || 0;
+        
+        // Handle Conditional Damage
+        if (effect.conditionalDamage) {
+          if (effect.conditionalDamage.type === 'LOW_PROB') {
+            const currentProb = calculateSuccessOdds(card, player, enemy, combo, isGodMode);
+            if (currentProb <= (effect.conditionalDamage.threshold || 30)) {
+              baseDamage *= (effect.conditionalDamage.multiplier || 3);
+              logs.push(`UNDERDOG! Damage tripled due to low odds.`);
+            }
+          } else if (effect.conditionalDamage.type === 'COMBO') {
+            const bonus = (effect.conditionalDamage.bonusPerCombo || 2) * combo;
+            baseDamage += bonus;
+            if (bonus > 0) logs.push(`Streak Bonus: +${bonus} DMG.`);
+          }
+        }
+
         let relicAtkBonus = 0;
         nextPlayer.relics.forEach(r => {
           if (r.effect.type === 'ATTACK_BONUS') relicAtkBonus += r.effect.value;
         });
 
-        let damage = effect.damage + (nextPlayer.statusEffects.find(e => e.type === 'STRENGTH')?.value || 0) + nextPlayer.stats.attackBonus + relicAtkBonus;
+        let damage = baseDamage + (nextPlayer.statusEffects.find(e => e.type === 'STRENGTH')?.value || 0) + relicAtkBonus;
         if (nextEnemy.statusEffects.find(e => e.type === 'VULNERABLE')) damage = Math.floor(damage * 1.5);
         if (nextPlayer.statusEffects.find(e => e.type === 'WEAK')) damage = Math.floor(damage * 0.75);
         
@@ -274,7 +382,7 @@ export const applyCardEffects = (
         logs.unshift(`Gained ${effect.block} Block.`);
       }
       if (effect.energy) {
-        nextPlayer.energy += effect.energy;
+        nextPlayer.energy = Math.min(nextPlayer.maxEnergy, nextPlayer.energy + effect.energy);
         logs.unshift(`Recovered ${effect.energy} Energy.`);
       }
       if (effect.winBattle && nextEnemy) {
@@ -299,12 +407,30 @@ export const applyCardEffects = (
         logs.unshift(`Hand discarded!`);
       }
       if (effect.addStatus) {
-        nextPlayer.statusEffects.push({ ...effect.addStatus });
+        nextPlayer.statusEffects = mergeStatusEffects(nextPlayer.statusEffects, effect.addStatus);
         logs.unshift(`Gained Status: ${effect.addStatus.name}`);
       }
       if (effect.applyEnemyStatus && nextEnemy) {
-        nextEnemy.statusEffects.push({ ...effect.applyEnemyStatus });
+        nextEnemy.statusEffects = mergeStatusEffects(nextEnemy.statusEffects, effect.applyEnemyStatus);
         logs.unshift(`Enemy Status: ${effect.applyEnemyStatus.name}`);
+      }
+      if (effect.resetEntropy) {
+        nextPlayer.entropy = 0;
+        logs.unshift(`Entropy Stabilized! Chaos reset to 0.`);
+      }
+      if (effect.pityPayoff) {
+        // Gain Strength based on Failure Streak
+        const bonusStrength = nextPlayer.failureStreak * 4;
+        if (bonusStrength > 0) {
+          nextPlayer.statusEffects = mergeStatusEffects(nextPlayer.statusEffects, {
+            type: 'STRENGTH',
+            value: bonusStrength,
+            duration: 99,
+            name: 'Pity Power'
+          });
+          logs.unshift(`Pity Payoff! Gained ${bonusStrength} Strength from Bad Luck.`);
+        }
+        nextPlayer.failureStreak = 0; // Consume the streak
       }
     }
   }

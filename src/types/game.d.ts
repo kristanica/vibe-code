@@ -19,7 +19,8 @@ type StatusEffectType =
 type StatusEffect = {
   type: StatusEffectType;
   value: number;
-  duration: number; // turns remaining
+  duration: number; // turns or actions remaining
+  durationType?: "TURN" | "ACTION";
   name: string;
 };
 
@@ -35,7 +36,15 @@ type GameEffect = {
   loseTurn?: boolean;
   nothing?: boolean;
   addStatus?: StatusEffect;
-  applyEnemyStatus?: StatusEffect; // New: Apply to enemy
+  applyEnemyStatus?: StatusEffect;
+  resetEntropy?: boolean;
+  pityPayoff?: boolean;
+  conditionalDamage?: {
+    type: "LOW_PROB" | "COMBO";
+    threshold?: number;
+    multiplier?: number;
+    bonusPerCombo?: number;
+  };
 };
 
 type GameCard = {
@@ -45,7 +54,7 @@ type GameCard = {
   type: CardType;
   cost: number;
   baseOdds: number;
-  price?: number; // Cost in chips
+  price?: number;
   successEffect: GameEffect;
   failEffect?: GameEffect;
   description: string;
@@ -60,13 +69,13 @@ type EnemyMove = {
   intent: EnemyIntent;
   value: number;
   description?: string;
-  hits?: number; // Multi-hit combo
+  hits?: number;
   secondaryIntent?: EnemyIntent;
   secondaryValue?: number;
-  weight?: number; // For ADAPTIVE AI
-  cooldown?: number; // Turns before it can be used again
+  weight?: number;
+  cooldown?: number;
   animationType?: "light" | "heavy" | "combo" | "cast" | "defend";
-  requiredHpPercentage?: number; // Only use if HP < this %
+  requiredHpPercentage?: number;
 };
 
 type Enemy = {
@@ -83,8 +92,11 @@ type Enemy = {
   attack?: number;
   passiveDescription?: string;
   debuffOdds?: number;
+  jamsPity?: boolean;
+  freezesCombo?: boolean;
+  punishesFailure?: boolean;
   statusEffects: StatusEffect[];
-  currentMoveCooldowns?: Record<number, number>; // index -> remaining cooldown
+  currentMoveCooldowns?: Record<number, number>;
   animationState?:
     | "idle"
     | "light"
@@ -104,7 +116,10 @@ type RelicEffect = {
     | "FAILURE_BLOCK"
     | "GLOBAL_SUCCESS_CHANCE"
     | "ATTACK_BONUS"
-    | "HEAL_ON_VICTORY";
+    | "HEAL_ON_VICTORY"
+    | "DOUBLE_PITY"
+    | "HALVE_ENTROPY_GAIN"
+    | "COMBO_CAP_BOOST";
   value: number;
 };
 
@@ -122,6 +137,10 @@ type PlayerStats = {
   attackBonus: number;
   maxHpBonus: number;
   successRateBonus: number;
+  focus: number;
+  maxEnergyBonus: number;
+  fortune: number;
+  volatility: number;
 };
 
 type PlayerState = {
@@ -146,6 +165,19 @@ type PlayerState = {
   exp: number;
   nextLevelExp: number;
   stats: PlayerStats;
+  failureStreak: number;
+  entropy: number;
+};
+
+type ProbabilityLayer = {
+  name: string;
+  value: number;
+};
+
+type ProbabilityBreakdown = {
+  baseOdds: number;
+  layers: ProbabilityLayer[];
+  finalOdds: number;
 };
 
 type NodeType =
@@ -187,7 +219,6 @@ type GamePhase =
   | "BATTLE_END"
   | "DRAFT"
   | "SHOP"
-  | "MAP"
   | "STARTER_SELECT"
   | "EVENT"
   | "LEVEL_UP"
@@ -219,14 +250,19 @@ type GameState = {
   score: number;
   combo: number;
   highestCombo: number;
+  tutorialStep: number;
+  isTutorialOpen: boolean;
+  resolvingCard: GameCard | null;
+  rollValue: number | null;
 };
 
 interface GameActions {
   addScore: (amount: number) => void;
   resetScore: () => void;
   setCombo: (amount: number) => void;
-  startGame: () => void;
-  drawCards: (count: number) => void;
+  nextTutorialStep: () => void;
+  finishTutorial: () => void;
+  openTutorial: () => void;
   playCard: (card: GameCard) => void;
   toggleSelectCard: (card: GameCard) => void;
   clearSelection: () => void;
@@ -254,4 +290,5 @@ interface GameActions {
   setShopSelectionMode: (mode: "NONE" | "REMOVE" | "UPGRADE") => void;
   buyDiscard: () => void;
   buyShuffle: () => void;
+  finishCardResolution: () => void;
 }

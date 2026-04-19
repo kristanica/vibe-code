@@ -61,5 +61,32 @@ export const RELICS: Relic[] = [
     effect: { type: 'HEAL_ON_VICTORY', value: 5 },
     rarity: 'RARE',
     price: 130
+  },
+  {
+    id: 'weighted-dice',
+    name: 'Weighted Dice',
+    description: 'Pity bonus is doubled (+10% per failure).',
+    icon: '🎲',
+    effect: { type: 'DOUBLE_PITY', value: 2 },
+    rarity: 'RARE',
+    price: 160
+  },
+  {
+    id: 'liquid-cooling',
+    name: 'Liquid Cooling',
+    description: 'Entropy penalty is halved (-0.25% per success).',
+    icon: '🧪',
+    effect: { type: 'HALVE_ENTROPY_GAIN', value: 2 },
+    rarity: 'RARE',
+    price: 140
+  },
+  {
+    id: 'combo-meter',
+    name: 'Combo Meter',
+    description: 'Combo Success Bonus cap increased to +20%.',
+    icon: '📈',
+    effect: { type: 'COMBO_CAP_BOOST', value: 20 },
+    rarity: 'RARE',
+    price: 150
   }
 ];

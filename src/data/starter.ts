@@ -7,7 +7,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Safe Strike",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 95,
+    baseOdds: 85,
     successEffect: { damage: 5 },
     failEffect: { damage: 2 },
     description:
@@ -19,7 +19,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Heavy Slam",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 75,
+    baseOdds: 65,
     successEffect: { damage: 14 },
     failEffect: { nothing: true },
     description:
@@ -31,7 +31,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Iron Shield",
     type: "DEFENSE",
     cost: 1,
-    baseOdds: 90,
+    baseOdds: 80,
     successEffect: { block: 8 },
     failEffect: { block: 2 },
     description:
@@ -43,7 +43,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Shield Bash",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 85,
+    baseOdds: 75,
     successEffect: { damage: 6, block: 6 },
     failEffect: { block: 3 },
     description:
@@ -55,7 +55,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Energy Drink",
     type: "SYNERGY",
     cost: 0,
-    baseOdds: 100,
+    baseOdds: 95,
     successEffect: { energy: 1 },
     failEffect: { nothing: true },
     description: "A quick caffeine hit. Low cost energy boost.",
@@ -68,7 +68,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Combo Starter",
     type: "SYNERGY",
     cost: 1,
-    baseOdds: 85,
+    baseOdds: 75,
     successEffect: {
       damage: 4,
       addStatus: {
@@ -88,7 +88,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Reckless Swing",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 50,
+    baseOdds: 40,
     successEffect: { damage: 24 },
     failEffect: { takeDamage: 4 },
     description:
@@ -100,13 +100,14 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Double Down",
     type: "SYNERGY",
     cost: 1,
-    baseOdds: 65,
+    baseOdds: 55,
     successEffect: {
       addStatus: {
         type: "DOUBLE_DOWN",
         value: 0,
         duration: 1,
-        name: "Doubled",
+        durationType: "ACTION",
+        name: "Quantum",
       },
     },
     failEffect: { nothing: true },
@@ -119,7 +120,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Fluid Motion",
     type: "DEFENSE",
     cost: 1,
-    baseOdds: 70,
+    baseOdds: 60,
     successEffect: {
       block: 6,
       addStatus: { type: "DODGE", value: 6, duration: 3, name: "Evasive" },
@@ -136,7 +137,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Pure Adrenaline",
     type: "MODIFIER",
     cost: 0,
-    baseOdds: 50,
+    baseOdds: 40,
     successEffect: {
       energy: 1,
       addStatus: { type: "STRENGTH", value: 4, duration: 99, name: "Pumped" },
@@ -151,7 +152,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Titan Form",
     type: "DEFENSE",
     cost: 2,
-    baseOdds: 60,
+    baseOdds: 50,
     successEffect: {
       addStatus: {
         type: "ARMOR",
@@ -170,7 +171,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "The Guillotine",
     type: "ATTACK",
     cost: 3,
-    baseOdds: 30,
+    baseOdds: 25,
     successEffect: { damage: 50 },
     failEffect: { takeDamage: 8 },
     description:
@@ -184,7 +185,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Glass Cannon",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 40,
+    baseOdds: 35,
     successEffect: { damage: 35 },
     failEffect: { takeDamage: 10 },
     description:
@@ -196,7 +197,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Chaos Bolt",
     type: "ATTACK",
     cost: 1,
-    baseOdds: 50,
+    baseOdds: 45,
     successEffect: { damage: 20, drawCards: 2 },
     failEffect: {
       applyEnemyStatus: {
@@ -215,7 +216,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Backdoor Protocol",
     type: "MODIFIER",
     cost: 1,
-    baseOdds: 30,
+    baseOdds: 25,
     successEffect: { winBattle: true },
     failEffect: { takeDamage: 10 },
     description: "A risky attempt to instantly end the battle.",
@@ -226,7 +227,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Jackpot Strike",
     type: "ATTACK",
     cost: 2,
-    baseOdds: 20,
+    baseOdds: 15,
     successEffect: { damage: 100 },
     failEffect: { nothing: true },
     description: "Massive damage if you hit the jackpot.",
@@ -237,7 +238,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Infinity Shield",
     type: "DEFENSE",
     cost: 2,
-    baseOdds: 50,
+    baseOdds: 45,
     successEffect: { block: 99 },
     failEffect: { takeDamage: 5 },
     description: "Provides near-impenetrable defense.",
@@ -248,7 +249,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Time Dilation",
     type: "SYNERGY",
     cost: 1,
-    baseOdds: 60,
+    baseOdds: 50,
     successEffect: { energy: 5, drawCards: 5 },
     failEffect: { loseTurn: true },
     description: "Vastly increase your resources for one turn.",
@@ -259,7 +260,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Probability Storm",
     type: "MODIFIER",
     cost: 0,
-    baseOdds: 100,
+    baseOdds: 95,
     successEffect: {
       addStatus: { type: "SHARP_EYE", value: 50, duration: 3, name: "Storm" },
     },
@@ -271,7 +272,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Reaper's Call",
     type: "ATTACK",
     cost: 3,
-    baseOdds: 40,
+    baseOdds: 35,
     successEffect: {
       damage: 40,
       applyEnemyStatus: {
@@ -290,13 +291,14 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Quantum Gamble",
     type: "GAMBLE",
     cost: 0,
-    baseOdds: 50,
+    baseOdds: 45,
     successEffect: {
       energy: 2,
       addStatus: {
         type: "DOUBLE_DOWN",
         value: 0,
         duration: 1,
+        durationType: "ACTION",
         name: "Quantum",
       },
     },
@@ -309,7 +311,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "System Overdrive",
     type: "SYNERGY",
     cost: 2,
-    baseOdds: 70,
+    baseOdds: 60,
     successEffect: {
       addStatus: {
         type: "STRENGTH",
@@ -327,7 +329,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Divine Intervention",
     type: "DEFENSE",
     cost: 1,
-    baseOdds: 40,
+    baseOdds: 35,
     successEffect: {
       addStatus: { type: "REGEN", value: 5, duration: 5, name: "Divine" },
       block: 20,
@@ -341,7 +343,7 @@ export const STARTER_CARDS: GameCard[] = [
     name: "Chaos Theory",
     type: "GAMBLE",
     cost: 0,
-    baseOdds: 50,
+    baseOdds: 45,
     successEffect: { damage: 30, block: 30, energy: 1 },
     failEffect: {
       applyEnemyStatus: {
@@ -353,6 +355,57 @@ export const STARTER_CARDS: GameCard[] = [
     },
     description: "Everything you need, or a stronger enemy.",
     rarity: "EXCLUSIVE",
+  },
+  // --- NEW GAMBLER'S TOOLKIT ---
+  {
+    id: "underdog-strike",
+    name: "Underdog Strike",
+    type: "ATTACK",
+    cost: 2,
+    baseOdds: 30,
+    successEffect: { 
+      damage: 12, 
+      conditionalDamage: { type: "LOW_PROB", threshold: 40, multiplier: 3 } 
+    },
+    failEffect: { nothing: true },
+    description: "Deals 12 DMG. Damage is TRIPLED if success chance is 40% or lower.",
+    rarity: "RARE",
+  },
+  {
+    id: "stabilizer",
+    name: "Stabilizer",
+    type: "MODIFIER",
+    cost: 1,
+    baseOdds: 80,
+    successEffect: { resetEntropy: true, block: 10 },
+    failEffect: { takeDamage: 5 },
+    description: "Resets Entropy to 0 and gain 10 Block. If it fails, take 5 damage.",
+    rarity: "UNCOMMON",
+  },
+  {
+    id: "jackpot-surge",
+    name: "Jackpot Surge",
+    type: "SYNERGY",
+    cost: 1,
+    baseOdds: 60,
+    successEffect: { pityPayoff: true },
+    failEffect: { nothing: true },
+    description: "Resets Pity Bonus. Gain +4 permanent Strength per point of Pity consumed.",
+    rarity: "RARE",
+  },
+  {
+    id: "streak-shot",
+    name: "Streak Shot",
+    type: "ATTACK",
+    cost: 1,
+    baseOdds: 70,
+    successEffect: { 
+      damage: 5, 
+      conditionalDamage: { type: "COMBO", bonusPerCombo: 3 } 
+    },
+    failEffect: { nothing: true },
+    description: "Deals 5 DMG + 3 extra damage for every point of active Combo.",
+    rarity: "UNCOMMON",
   },
 ];
 
@@ -525,9 +578,11 @@ export const ENEMIES: Record<string, Enemy> = {
     intent: "ATTACK",
     aiType: "ADAPTIVE",
     debuffOdds: -5,
+    freezesCombo: true,
+    punishesFailure: true,
     statusEffects: [],
     passiveDescription:
-      "House Advantage: Gains +2 Strength every turn he remains undefeated.",
+      "AURA: Momentum Frozen. Gains 5 Block on every player failure. Gains +2 Strength every turn.",
     moves: [
       {
         intent: "ATTACK",
@@ -625,8 +680,9 @@ export const ELITE_ENEMIES: Record<string, Enemy> = {
     intent: "ATTACK",
     aiType: "ADAPTIVE",
     debuffOdds: -20,
+    jamsPity: true,
     statusEffects: [],
-    passiveDescription: "Loaded Dice: -20% success rate for all cards.",
+    passiveDescription: "Loaded Dice: -20% success rate. Pity Bonus is disabled while active.",
     moves: [
       {
         intent: "ATTACK",

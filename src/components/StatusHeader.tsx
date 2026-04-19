@@ -16,33 +16,72 @@ export function StatusHeader() {
   const { player, floor, act, isGodMode, toggleGodMode, score, combo } =
     useGameStore();
   const playerControls = useAnimation();
-  const [damageNumbers, setDamageNumbers] = useState<
-    { id: number; value: number }[]
-  >([]);
+  const energyControls = useAnimation();
+  const playControls = useAnimation();
+  
+  const [damageNumbers, setDamageNumbers] = useState<{ id: number; value: number }[]>([]);
+  const [blockNumbers, setBlockNumbers] = useState<{ id: number; value: number }[]>([]);
+  const [resourceNumbers, setResourceNumbers] = useState<{ id: number; value: string; color: string }[]>([]);
+  
   const prevHp = useRef(player.hp);
+  const prevBlock = useRef(player.block);
+  const prevEnergy = useRef(player.energy);
+  const prevPlays = useRef(player.playsRemaining);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
+  // HP/Damage Tracking
   useEffect(() => {
     if (player.hp < prevHp.current && !isGodMode) {
       const damage = prevHp.current - player.hp;
       playerControls.start({
         x: [0, -10, 10, -10, 10, 0],
-        backgroundColor: [
-          "rgba(15, 23, 42, 0.5)",
-          "rgba(239, 68, 68, 0.4)",
-          "rgba(15, 23, 42, 0.5)",
-        ],
+        backgroundColor: ["rgba(15, 23, 42, 0.5)", "rgba(239, 68, 68, 0.4)", "rgba(15, 23, 42, 0.5)"],
         transition: { duration: 0.4 },
       });
-
       const id = Date.now();
       setDamageNumbers((prev) => [...prev, { id, value: damage }]);
-      setTimeout(() => {
-        setDamageNumbers((prev) => prev.filter((num) => num.id !== id));
-      }, 1000);
+      setTimeout(() => setDamageNumbers((prev) => prev.filter((num) => num.id !== id)), 1000);
     }
     prevHp.current = player.hp;
   }, [player.hp, playerControls, isGodMode]);
+
+  // Block/Armor Tracking
+  useEffect(() => {
+    if (player.block < prevBlock.current && !isGodMode) {
+      const blockLost = prevBlock.current - player.block;
+      playerControls.start({ scale: [1, 0.95, 1.05, 1], transition: { duration: 0.2 } });
+      const id = Date.now() + 1;
+      setBlockNumbers((prev) => [...prev, { id, value: blockLost }]);
+      setTimeout(() => setBlockNumbers((prev) => prev.filter((num) => num.id !== id)), 1000);
+    }
+    prevBlock.current = player.block;
+  }, [player.block, playerControls, isGodMode]);
+
+  // Energy Gain Tracking
+  useEffect(() => {
+    if (player.energy > prevEnergy.current) {
+      const gained = player.energy - prevEnergy.current;
+      energyControls.start({ scale: [1, 1.5, 1], transition: { duration: 0.3 } });
+      
+      const id = Date.now() + 2;
+      setResourceNumbers(prev => [...prev, { id, value: `+${gained} Energy`, color: "text-yellow-400" }]);
+      setTimeout(() => setResourceNumbers(prev => prev.filter(n => n.id !== id)), 1000);
+    }
+    prevEnergy.current = player.energy;
+  }, [player.energy, energyControls]);
+
+  // Play Gain Tracking
+  useEffect(() => {
+    if (player.playsRemaining > prevPlays.current) {
+      const gained = player.playsRemaining - prevPlays.current;
+      playControls.start({ scale: [1, 1.5, 1], transition: { duration: 0.3 } });
+      
+      const id = Date.now() + 3;
+      setResourceNumbers(prev => [...prev, { id, value: `+${gained} Plays`, color: "text-emerald-400" }]);
+      setTimeout(() => setResourceNumbers(prev => prev.filter(n => n.id !== id)), 1000);
+    }
+    prevPlays.current = player.playsRemaining;
+  }, [player.playsRemaining, playControls]);
 
   return (
     <header className="flex flex-col mb-4 relative">
@@ -51,8 +90,8 @@ export function StatusHeader() {
         onClose={() => setIsStatsModalOpen(false)}
       />
 
-      {/* Floating Damage Numbers for Player */}
-      <div className="absolute left-20 top-20 pointer-events-none z-[100]">
+      {/* Floating Indicators Container */}
+      <div className="absolute left-20 top-20 pointer-events-none z-[100] flex flex-col gap-2">
         <AnimatePresence>
           {damageNumbers.map((num) => (
             <motion.div
@@ -65,8 +104,31 @@ export function StatusHeader() {
               -{num.value}
             </motion.div>
           ))}
+          {blockNumbers.map((num) => (
+            <motion.div
+              key={num.id}
+              initial={{ opacity: 0, y: 0, scale: 0.5 }}
+              animate={{ opacity: 1, y: 50, scale: 1.5 }}
+              exit={{ opacity: 0 }}
+              className="text-blue-400 font-black text-4xl italic tracking-tighter drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]"
+            >
+              -{num.value}
+            </motion.div>
+          ))}
+          {resourceNumbers.map((res) => (
+            <motion.div
+              key={res.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 20, y: -40 }}
+              exit={{ opacity: 0 }}
+              className={cn("font-black text-2xl italic tracking-tighter drop-shadow-lg", res.color)}
+            >
+              {res.value}
+            </motion.div>
+          ))}
         </AnimatePresence>
       </div>
+
       <div className="flex justify-between items-center w-full mb-3">
         <div className="flex items-center gap-4">
           {/* Player Core Box */}
@@ -96,15 +158,15 @@ export function StatusHeader() {
                 <span className="text-[8px] font-black uppercase text-yellow-500 mb-0.5">
                   Energy
                 </span>
-                <div className="flex items-center gap-1.5">
+                <motion.div animate={energyControls} className="flex items-center gap-1.5">
                   <Zap className="text-yellow-400 fill-yellow-400" size={14} />
-                  <span className="font-black text-xl italic tracking-tighter">
+                  <span className="font-black text-xl italic tracking-tighter text-yellow-400">
                     {player.energy}
                     <span className="text-slate-500 text-xs not-italic font-bold">
                       /{player.maxEnergy}
                     </span>
                   </span>
-                </div>
+                </motion.div>
               </div>
 
               <div className="w-px h-8 bg-slate-800" />
@@ -113,14 +175,14 @@ export function StatusHeader() {
                 <span className="text-[8px] font-black uppercase text-emerald-400 mb-0.5">
                   Plays
                 </span>
-                <div className="flex items-center gap-1.5">
+                <motion.div animate={playControls} className="flex items-center gap-1.5">
                   <span className="font-black text-xl italic tracking-tighter text-emerald-400">
                     {player.playsRemaining}
                     <span className="text-slate-500 text-xs not-italic font-bold">
                       /{player.maxPlays}
                     </span>
                   </span>
-                </div>
+                </motion.div>
               </div>
 
               {player.block > 0 && (
